@@ -1,0 +1,294 @@
+111408 0.3.2486
+	--More work on SMP.
+	--More code cleaned up. PGN_FUNC changed to POS_FUNC, so that it's (mostly)
+		transparent between PGN and EPD. So you can create a book from an EPD
+		file or run a test suite from a PGN. Weird huh?
+110608 0.3.2483
+	--Damn, I haven't updated this in a while.
+	--OK, it's ACTUALLY running stably on 4 processors now. It can play a
+		f'in game now!! I'm working on the speedup now, creating a _real_
+		benchmark function.
+072208 0.3.2468
+	--A flurry of tiny tweaks in an attempt to test everything. I'm going to
+		concentrate more on raw strength right now I think, as most major
+		features have been implemented and I have a solid testing scheme at
+		last.
+	--Some SMP stuff. It's running stably on 4 processors now, and it's actually
+		getting a positive speedup, though it's low. I'm not sure if it's just
+		the split point selection code that needs work, or if there's bugs, but
+		I can feel a good speedup coming...
+071608 0.3.2453
+	--SMP bugfixes, bugs introduced................... yawn.
+	--Pretty printing of PVs added.
+	--stuff_pv() removed. Didn't seem to help, and was causing weird bugs.
+	--TODO.txt added. All the old TODOs will stay in here for historical
+		reasons, but new stuff (and all the current stuff) will be migrated
+		there.
+070908 0.3.2450
+	--ZCT played in the 2008 ACCA WCRCC and got an amazing 11th
+		place. Just as amazingly, it was able to run on 2 processors throughout
+		the tournament without a crash.
+	--Lots of SMP fixes. Cleaned up the SMP code in search(), and other places.
+		Finally deleted insert(), as I don't feel like ever getting it to work
+		and it's just cluttering up the code.
+	--Windows compatibility for SMP added by Teemu Pudas: it uses threads!
+	--EGBB path is now user-adjustable
+	--Some code cleaned up, adjusted for 80-column displays, some more comments
+	TODO:
+	Fix SMP completely, fix hangs/scaling on more than 2 processors.
+	Convert to threads?
+	Finish work on the testing system. to automatically test new version. I'd
+		like to also implement a distributed model to test on a network, and set
+		up some old computers to test 24/7. Now that would be cool.
+	Rewrite eval--this is long and arduous, but necessary. This is based on the
+		last comment. I will go the ultra-solid route, and rewrite it piece by
+		piece, tuning extensively as I go and testing everything thoroughly.
+	UCI setoption
+	Make a new NO_MOVE macro, to differentiate null moves
+060308 0.3.2447
+	--Bunch of eval tweaking, SMP fixing, etc.
+	--Two huge eval bugs fixed. One from the past few weeks, the other from
+		months and months ago (see the 112007 log entry to see what I mean).
+		Thanks a ton to Fonzy Bluemers for spotting them!! They are too
+		embarassing to describe in detail...
+051908 0.3.2445
+	--Big code restructuring. All of the non-constant global variables, apart
+		from the process-local hash tables, were moved into a big struct. The
+		code is a teensy bit messier due to the zct->s everywhere, but I think
+		it is overall more clean in design.
+	--Time usage tweaks
+	--DTS bugfixes
+	--Other bugfixes
+	--Book updating implemented
+	--Note to self: Rybka had played publicly at a pretty weak level before its
+		infamous debut...
+051108 0.3.2444
+	--Bugs fixed. There were many that were lurking, only to be found by other
+		people upon ZCT's release.
+	--Semi-Path-Dependent hashing implemented, but possibly a failure. More
+		tests are being conducted.
+042808 0.3.2442
+	--Bugs fixed: I've been working a lot on the SMP code, because since I've
+		gotten a Q6600, I've found that many things don't work with 4 cpus. Who
+		woulda thunk... It's coming together though.
+	--More bugs fixed: I finally broke down and fixed the age-old PV hash move
+		appending stuff.
+	--Cool stuff: I got a freakin Q6600, I got accepted into the Google Summer
+		of Code, and I set up a CVS repository for ZCT on sourceforge. If only
+		everyone knew that ZCT is actually publicly available now...
+	--ZCT leaked to the public!! Yes, less than 24 hours after the above
+		sentence was written, the CVS archives were raided and exposed to the
+		world. Oh well, I suppose I'll have to save my Rybka-like grand
+		entrance for another game...
+020808 0.3.2441
+	--Eval stuff
+	--Made tune_pgn_func
+020708 0.3.2440
+	--Eval
+	--More bugs fixed. I'm trying to tune for the speedup in SMP, but something
+		is making the nodes searched almost double, and the idle time is usually
+		around 10+% of net CPU time.
+	--Added insert capability
+012908 0.3.2439
+	--More bugs fixed...
+	--Some Windows compatibility stuff, untested.
+012808 0.3.2438
+	--More bugs fixed, including a big one in SMP. Scores 296/300@60s.
+		with 2x1.25GHz G4 PPC, 64M RAM
+	--I slept through CCT...
+	--Scorpio bitbases added by Teemu Pudas
+	--Initialization file added
+	TODO:
+	book editing
+	Windows
+	License
+	UCI
+	PGN: pgn_func
+	SMP: Change split() and find_split_point() so it finds a split point, add
+		INSERT message
+	Eventually soup up the debug interface to how it was originally envisioned
+012208 0.3.2437
+	--More bugs fixed, some in SMP.
+	--Been playing on ICC for a little bit, not doing that well! I think it's
+		just because I'm always playing people rated lower than me though.
+	--The new makefile I made was messed up, and I fixed it.
+011408 0.3.2435
+	--Numerous bugs fixed: time control, pondering, eval, etc. etc. etc.
+	--Code cleaned up more...
+	--UCI pretty much completed, needs setoption stuff
+	--A Windows compile was made without the standard timing, input, SMP etc.
+		Hardly any code changes necessary, just wading through MS BS to make the
+		compiler work.
+	--I should get an ICC account soon.
+	TODO:
+	Setoption stuff mentioned
+	DTS DTS DTS DTS DTS DTS DTS DTS DTS DTS
+	Write a license
+123107 0.3.2420
+	--Code cleaned up.
+	--Bugs fixed in DTS. Seems pretty stable with 2 processors, but more makes
+		everything funny. Also the split point is not yet chosen by the idle
+		processor, although it does look at the search states. I think the DTS
+		code will have to be cleaned up.
+	TODO:
+	Finish UCI
+	Clean up more code
+	Take all useless features out of eval
+121807 0.3.2418
+	--Version numbering system tweaked a bit.
+	--Many eval changes, king safety, piece evaluation, mobility, ...
+	--Some search stuff
+	--Tweaking. Strength has remained stagnant though...
+112107 0.2.02392
+	--From now on, I will only update the major changes, every few versions. The
+		versioning system is going to create a lot of new version numbers, as
+		you can see.
+112007 0.2.0239
+	--Many of the changes I have made recently seemed to hurt playing strength.
+		I've since implemented a new versioning/testing scheme that I hope will
+		alleviate this in the future.
+111207 0.2.0238
+	--UCI protocol work
+	--progressive mobility experiments: worthless?
+110507 0.2.0237
+	--Changed SMP a bit. SMP_SPLIT is now a message, rather than an input. It
+		caused some deadlocks. But the implementation of this still needs to be
+		fleshed out...
+	--In the same version, SMP_SPLIT is back to an input. I didn't really think
+		that change through...
+	--Do_null parameter removed. Now there are no recursive constraints on null
+		moving.
+	--Internal node evaluations now done. This is just to support future
+		selective searching. Not much slowdown: about 5%.
+	--Consolidated hash_probe and qsearch_hash_probe.
+	--Eval work.
+102207 0.2.0236
+	--Notice all the new versions?
+	--Work on SMP.
+	--A couple of eval bugs fixed.
+	TODO:
+	Finally figure out why my stupid singular extensions aren't working. This is
+		a problem I've been wrestling with for a few years now.
+	I really need to finish DTS. Really.
+101607 0.2.0235
+	--Refactored the select_move interface. Now there is less repeated code.
+	--Time control tweaks, now actually uses soft/hard time limits.
+	--Rudimentary UCI interface added.
+	--Now ZCT is beating GNUChess 5.07 in head-to-head competition. Estimated
+		ELO is about 2400.
+	--Autotuning implemented, but has not been utilized much yet. Basically just
+		a comparison of evaluations on moves from a PGN.
+	TODO:
+	Endgame recognizers, including minimal mating material scoring
+	Some selectivity in search, extensions and reductions based on components of
+		the eval
+100507 0.2.0234
+	--I recently registered for the 10th CCT, and so I'm now in overdrive mode
+		working on ZCT. Even though it's three and a half months away. I AM
+		GOING TO WIN!!! (not really.) It would be cool to win a processor
+		though.
+	--Value type added
+	--Changed to smooth opening-endgame transition.
+	--More code cleaning up
+093007 0.2.0233
+	--Bugs! After implementing an evaluation symmetry test ("I couldn't possibly
+		have symmetry bugs..."), I found a few nasty ones, some not even in the
+		eval. Now it passes all the suites I throw at it. Some other stupid bugs
+		were found recently, like how the value of extend() was not returned
+		(don't know how that didn't show up...).
+	--Some eval+search tuning
+	--The book is basically complete.
+	--ETC added
+	TODO:
+	Finish DTS
+	Eval: passed pawns and king safety, endgame!! (Maybe a smooth
+		opening-endgame transition?)
+	Learning: eval tuning, book learning
+	Maybe implement UCI, just as a proof-of-concept of my protocol interface
+		design
+091407 0.2.0232
+	--Some eval tuning
+	--Added a PGN reader and the start of a book
+090807 0.2.0231
+	--Added some king safety shelter code
+	--New implementation of IID, by counting nodes of each individual move.
+		Doesn't seem to help.
+	--Another move sorting bug fixed: The move sorting function didn't take the
+		score of the first move in the list into account, leading to bad sorting
+		much of the time.
+082607 0.2.0230
+	--DTS coming along nicely. Some bugs included.
+	--Stupid SEE bug fixed. attacked_piece was a PIECE rather than an int.
+		Changed name to attacked_piece_value to make it a little clearer.
+		Maybe should introduce a VALUE type?
+	TODO:
+	Time management
+	Still working on that stuff...
+081007 0.2.0229
+	--SMP: In an effort to fully complete DTS search, the data structures were
+		radically changed to accomodate more than one split point per process.
+		This involved adding a message queue to each process for asynchronous
+		commands, and taking away all message passing done at split point level.
+	--Various cleaning up around the code, to get ready for an open source
+		release (one main goal is to be the first open source DTS
+		implementation)
+	TODO:
+	Finish DTS search
+	Release!
+	Oh yeah, all that other stuff from last version
+062507 0.2.0228
+	--Some work on the debugger.
+	--Search changes (IID, Null move, hash tables, checks in qsearch, etc.)
+	--Check evasion generator
+	TODO:
+	Opening book still
+	More eval: progressive mobility, passed pawns, king safety
+	Search: extensions, reductions, eval stuff, qsearch null move?
+042507 0.2.0227
+	--Forgot about this file. These changes and the ones from 0.2.0228 are from
+		memory.
+	--EPD test support
+	--Probably other stuff lost to the sands of time...
+102806 0.2.0226
+	--Changed from bitboard+0x88 to bitboard+64. I didn't really use the 0x88
+		anyways.
+	--Eval
+	--Bugfixes
+	--Added nodetypes: NODE_PV, NODE_SINGULAR, NODE_ALL, NODE_CUT
+	--Removed null-move and fail soft cpp switches
+	--Separated smp.c into smp.c and smp2.c
+100906 0.2.0225
+	--Added analysis and pondering
+	--Debugger is coming along slowly...
+	--Eval stuff
+100506 0.2.0224
+	--Separate capture generator
+	--Pawn and eval hashtables
+	--Evaluation changes
+	--Perft hashtable, changed counter to 64 bit
+	--Search debugger
+	TODO:
+	Opening book
+	Analysis, pondering
+	PGN and EPD support
+091806 0.2.0223
+	--Added Changes.txt :)
+	--pv_stack converted into 2-dimensional array. This was mainly to simplify
+		unsplitting in the SMP search, as the in the previous method the PV at a
+		certain ply was aligned to come right after the previous ply's, and when
+		the split point had a different sized PV, everything below it had to be
+		shifted. It also means one less parameter to search_call, and no
+		pv_start or pv_end in the SEARCH_BLOCKs.
+	--Static Exchange Evaluator added, inefficient.
+	--Experiments in "delta" pruning
+	--Eval changes
+	--Move ordering: killers, counter moves
+	--New print function, custom format specifiers
+	--SMP: Added full update capability, so changes of alpha at a split point
+		propagate up the tree, reducing work.
+	TODO:
+	Eval: doubled pawns, passed pawns
+	Restructure code: search.h, another smp file, etc.
+	Qsearch: checks, stand pat, null move
+	SMP: More portable code, asm spinlocks
+	SEE: replace with attack table? add pins?
