@@ -28,7 +28,6 @@
 
 #define SMP
 //#define CLUSTER
-//#define EGBB
 //#define ZCT_DEBUG
 //#define DEBUG_SEARCH
 

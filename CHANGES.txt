@@ -1,3 +1,8 @@
+031809 0.3.2491
+	--Tons of SMP crap.
+	--Statistics functioning properly.
+	--EGBBs removed. Sorry everyone, I decided I did not want anyone else's
+		code in ZCT.
 111408 0.3.2486
 	--More work on SMP.
 	--More code cleaned up. PGN_FUNC changed to POS_FUNC, so that it's (mostly)

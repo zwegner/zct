@@ -21,7 +21,6 @@
 #include "functions.h"
 #include "globals.h"
 #include "debug.h"
-#include "probe.h"
 #include "smp.h"
 
 #define SEARCH_CALL(d, p, a, b, fm, nt, ss) \
@@ -124,24 +123,6 @@ case SEARCH_START:
 		/* Probe the hash table. */
 		if (hash_probe(sb, FALSE))
 			RETURN(sb->alpha);
-
-#ifdef EGBB
-		/* Probe the bitbases. */
-		if (egbb_is_loaded && pop_count(board.occupied_bb) <= 4)
-//		&& (board.game_entry->capture != EMPTY ||
-//			board.piece[MOVE_TO((sb-1)->move)] == PAWN))
-		{
-			if (probe_bitbases(&r))
-			{
-				if (r >= WIN_SCORE) /* prefer wins closer to root */
-					r -= sb->ply * WIN_PLY;
-				else if (r <= -WIN_SCORE)
-					r += sb->ply * WIN_PLY;
-				hash_store(sb, NO_MOVE, r, HASH_LOWER_BOUND, FALSE);
-				RETURN(r);
-			}
-		}
-#endif
 
 		sb->check = check_squares();
 		/* Nullmove search. */
@@ -385,29 +366,6 @@ case QSEARCH_START:
 		/* Probe the hash table. */
 		if (hash_probe(sb, TRUE))
 			RETURN(sb->alpha);
-#ifdef EGBB
-		/* Probe the bitbases. */
-		if (egbb_is_loaded && pop_count(board.occupied_bb) <= 5)
-		{
-			if (probe_bitbases(&r) && r != _NOTFOUND)
-			{
-				/* draw, exact score */
-				if (r == 0)
-					sb->alpha = sb->beta = 0;
-				/* mate */
-				else if (r > 0)
-					sb->alpha = MAX(MATE - MAX_PLY - 1, sb->alpha);
-				else if (r < 0)
-					sb->beta = MIN(-(MATE - MAX_PLY - 1), sb->beta);
-				if (sb->alpha >= sb->beta)
-				{
-					hash_store(sb, NO_MOVE, r, HASH_LOWER_BOUND, FALSE);
-					hash_store(sb, NO_MOVE, r, HASH_LOWER_BOUND, TRUE);
-					RETURN(r);
-				}
-			}
-		}
-#endif
 
 		sb->check = check_squares();
 		/* We can only stand pat if we're not in check. If we're in check,

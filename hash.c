@@ -20,7 +20,6 @@
 #include "zct.h"
 #include "functions.h"
 #include "globals.h"
-#include "probe.h"
 
 //#define USE_SPDH
 //#define PV_HASH_CUTOFFS
@@ -81,12 +80,6 @@ BOOL hash_probe(SEARCH_BLOCK *sb, BOOL is_qsearch)
 					value -= sb->ply;
 				else if (value <= -MATE + MAX_PLY)
 					value += sb->ply;
-#ifdef EGBB
-				else if (value >= WIN_SCORE + MAX_PLY * WIN_PLY)
-					value -= sb->ply * WIN_PLY;
-				else if (value <= -WIN_SCORE + MAX_PLY * WIN_PLY)
-					value += sb->ply * WIN_PLY;
-#endif
 				/* Check for cutoffs. */
 				type = HASH_TYPE(data);
 				if (type == HASH_EXACT_BOUND)
@@ -131,12 +124,6 @@ void hash_store(SEARCH_BLOCK *sb, MOVE move, VALUE value, HASH_BOUND_TYPE type, 
 		value += sb->ply;
 	else if (value <= -MATE + MAX_PLY)
 		value -= sb->ply;
-#ifdef EGBB
-	else if (value >= WIN_SCORE + MAX_PLY * WIN_PLY)
-		value += sb->ply * WIN_PLY;
-	else if (value <= -WIN_SCORE + MAX_PLY * WIN_PLY)
-		value -= sb->ply * WIN_PLY;
-#endif
 
 	hashkey = HASH_NON_PATH(board.hashkey);
 	if (is_qsearch)

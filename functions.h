@@ -133,16 +133,6 @@ void ponder(void);
 void sprint(char *string, int max_length, char *text, ...);
 void print(char *text, ...);
 void sprint_(char *string, int max_length, char *text, va_list args);
-#ifdef EGBB
-typedef int (*PPROBE_EGBB) (int player, int w_king, int b_king,
-							int piece1, int square1,
-							int piece2, int square2,
-							int piece3, int square3);
-
-typedef void (*PLOAD_EGBB) (char* path,int cache_size,int load_options);
-extern int LoadEgbbLibrary(char* main_path,int egbb_cache_size);
-extern int probe_bitbases(VALUE * value);
-#endif
 /* rand.c */
 HASHKEY random_hashkey(void);
 void seed_random(HASHKEY hashkey);

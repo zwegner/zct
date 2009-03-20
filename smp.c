@@ -47,6 +47,12 @@ void initialize_smp(int procs)
 	int z;
 #endif
 
+	/* Set up the default signals. This is because the child processes
+		inherit all of the parent's signal handlers, and we don't want that. */
+	signal(SIGINT, SIG_DFL);
+	signal(SIGTERM, SIG_DFL);
+//	signal(SIGCHLD, SIG_IGN);
+
 	if (smp_data != NULL)
 		smp_cleanup();
 	else if (atexit(smp_cleanup) == -1 || atexit(smp_cleanup_final) == -1)
@@ -55,12 +61,6 @@ void initialize_smp(int procs)
 		smp_cleanup_final();
 		fatal_error("fatal error: atexit failed");
 	}
-	/* Set up the default signals. This is because the child processes
-		inherit all of the parent's signal handlers, and we don't want that. */
-	signal(SIGINT, SIG_DFL);
-	signal(SIGTERM, SIG_DFL);
-	signal(SIGCHLD, SIG_IGN);
-
 	zct->process_count = procs;
 
 	/* Allocate the shared memory to the various data structures needed. */
@@ -100,8 +100,9 @@ void initialize_smp(int procs)
 		smp_block[x].input = 0;
 		smp_block[x].output = 0;
 		
-		initialize_split_score(&smp_block[x].tree.sb_score);
-		initialize_split_score(&smp_block[x].tree.split_score);
+		for (y = 0; y < MAX_PLY; y++)
+			initialize_split_score(&smp_block[x].tree.sb_score[y]);
+//		initialize_split_score(&smp_block[x].tree.split_score);
 
 #ifdef ZCT_WINDOWS
 		_pipe(smp_block[x].wait_pipe, 8, O_BINARY);
@@ -164,6 +165,7 @@ void initialize_smp(int procs)
 	{
 		signal(SIGINT, smp_cleanup_sig);
 		signal(SIGTERM, smp_cleanup_sig);
+//	signal(SIGCHLD, smp_cleanup_sig);
 	}
 
 	/* Now that the processors are spawned, make them idle until we start
@@ -693,15 +695,26 @@ Created 060808; last modified 060808
 **/
 void set_idle(void)
 {
+	TREE_BLOCK *tb;
+	int x;
+
+	/* Reset our public search score, so that nobody tries to tell us to split
+		and also so that we'll know to regenerate a score when we go active
+		again. */
+	if (!smp_block[board.id].idle)
+	{
+		tb = &smp_block[board.id].tree;
+		tb->best_id = -1;
+		tb->best_score = -1;
+		for (x = 0; x < MAX_PLY; x++)
+			initialize_split_score(&tb->sb_score[x]);
+	}
+
 	SMP_DEBUG(print("cpu %i going idle\n", board.id));
 	if (smp_block[board.id].last_idle_time == 0)
 		smp_block[board.id].last_idle_time = get_time();
 	smp_block[board.id].idle = TRUE;
 
-	/* Reset our public search score, so that nobody tries to tell us to split
-		and also so that we'll know to regenerate a score when we go active
-		again. */
-	initialize_split_score(&smp_block[board.id].tree.sb_score);
 }
 
 /**

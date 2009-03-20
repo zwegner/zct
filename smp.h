@@ -170,8 +170,11 @@ typedef struct CACHE_ALIGNED
 
 typedef struct CACHE_ALIGNED
 {
-	SPLIT_SCORE split_score;
-	SPLIT_SCORE sb_score;
+//	SPLIT_SCORE split_score;
+	SPLIT_SCORE sb_score[MAX_PLY];
+	float best_score;
+	ID best_id;
+	int best_ply;
 } TREE_BLOCK;
 
 /* Wrapper struct for each process, used for communication */
@@ -251,7 +254,7 @@ void stop(SEARCH_BLOCK *sb);
 void unsplit(SEARCH_BLOCK *sb, int id);
 void copy_search_state(SEARCH_BLOCK *sb, int process);
 void smp_wait(SEARCH_BLOCK **sb);
-void update_best_sb(SEARCH_BLOCK *sb);
+void update_best_sb(SEARCH_BLOCK *sb, BOOL recalculate);
 int find_split_point(void);
 
 #else

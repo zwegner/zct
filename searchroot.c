@@ -41,6 +41,10 @@ void search_root(void)
 	ROOT_MOVE *move;
 	int depth;
 
+	/* Reset ponder move. */
+	if (zct->engine_state != PONDERING)
+		zct->ponder_move = NO_MOVE;
+
 	/* Probe the book. If we get a hit, we don't have to search. */
 	if (zct->use_book && zct->engine_state != ANALYZING &&
 		zct->engine_state != PONDERING && zct->engine_state != INFINITE &&
@@ -146,10 +150,6 @@ void initialize_search(void)
 	if (zct->engine_state != BENCHMARKING)
 		initialize_statistics();
 
-	/* Reset ponder move. */
-	if (zct->engine_state != PONDERING)
-		zct->ponder_move = NO_MOVE;
-
 	/* Set up root PV counter (used for move ordering). */
 	zct->root_pv_counter = 0;
 
@@ -247,16 +247,18 @@ void print_search_info(void)
 			(float)100.0 * zct->eval_hash_hits / zct->eval_hash_probes,
 			(float)100.0 * zct->qsearch_hash_hits / zct->qsearch_hash_probes);
 #ifdef SMP
-		print("smp:    splits=%i stops=%i/%.1f%% nodes: (",
+		print("smp:    splits=%i stops=%i/%.1f%%\n",
 			smp_data->splits_done, smp_data->stops_done,
 			(float)100.0 * smp_data->stops_done / smp_data->splits_done);
+		print("        nodes: (");
 		for (x = 0; x < zct->process_count; x++)
 		{
 			print("%L", smp_block[x].nodes + smp_block[x].q_nodes);
 			if (x < zct->process_count - 1)
 				print(", ");
 		}
-		print(") idle=%T/%.1f%%\n", idle_time, (float)100.0 * idle_time /
+		print(")\n");
+		print("        idle=%T/%.1f%%\n", idle_time, (float)100.0 * idle_time /
 			((float)zct->process_count * time_used()));
 
 		if (zct->engine_state != BENCHMARKING)

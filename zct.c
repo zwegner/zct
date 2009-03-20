@@ -21,7 +21,6 @@
 #include "functions.h"
 #include "globals.h"
 #include "eval.h"
-#include "probe.h"
 #include "smp.h"
 
 int main(void)

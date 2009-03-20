@@ -335,8 +335,6 @@ void search_call(SEARCH_BLOCK *sb, BOOL is_qsearch, int depth, int ply,
 
 	sb->is_qsearch = is_qsearch;
 	sb->move_made = FALSE;
-
-//	update_best_sb(sb);
 }
 
 /**
@@ -350,7 +348,7 @@ void search_return(SEARCH_BLOCK *sb, VALUE return_value)
 	sb->return_value = return_value;
 #ifdef SMP
 	if (sb > board.search_stack)
-		update_best_sb(sb - 1);
+		update_best_sb(sb - 1, FALSE);
 #endif
 }
 

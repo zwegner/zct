@@ -6,12 +6,11 @@ LDFLAGS=-L/usr/pkg/lib/ -lm -lmpich
 
 FILES=bit book check cluster cmd cmdan cmddbg cmddef cmduci cmdxb debug epd \
 	eval evaleg evalinit evalks evalpawns evalpieces gen globals hash init	\
-	input make output perft pgn ponder probe print rand regress search		\
-	search2 searchroot see select smp smp2 stats test time tune unmake		\
-	verify zct
+	input make output perft pgn ponder print rand regress search search2	\
+	searchroot see select smp smp2 stats test time tune unmake verify zct
 
 HFILES=zct.h functions.h globals.h bit.h book.h cluster.h cmd.h debug.h		\
-	eval.h pgn.h probe.h smp.h stats.h
+	eval.h pgn.h smp.h stats.h
 
 CFILES=${addsuffix .c, ${FILES}}
 
@@ -48,7 +47,7 @@ release: ${CFILES} ${HFILES}
 	rm -f .temp.c
 
 distribution: cleano clean
-	zip zct2491.zip *.c *.h ZCT.ini nbook.zbk Makefile COPYING.txt README.txt \
+	zip zct2492.zip *.c *.h ZCT.ini nbook.zbk Makefile COPYING.txt README.txt \
 		CHANGES.txt
 	
 -include .dependr

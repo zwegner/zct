@@ -23,7 +23,6 @@
 #include "cmd.h"
 #include "eval.h"
 #include "pgn.h"
-#include "probe.h"
 #include "smp.h"
 
 COMMAND def_commands[] =
@@ -41,10 +40,6 @@ COMMAND def_commands[] =
 	{ 0, "divide", "display perft counts to depth - 1 for each root move",
 		1, cmd_divide },
 	{ 0, "easy", "turn pondering off", 2, cmd_easy },
-#ifdef EGBB
-	{ 0, "egbbpath", "Set the path for the directory containing Scorpio EGBBs",
-		1, cmd_egbbpath },
-#endif
 	{ 0, "eval", "display the static evaluation for the current position",
 		0, cmd_eval },
 	{ 0, "evalparam", "set an evaluation function parameter",
@@ -236,26 +231,6 @@ void cmd_divide(void)
 	}
 	print("moves=%L time=%T\n", total, get_time() - time);
 }
-
-#ifdef EGBB
-/**
-cmd_egbbpath():
-Sets the path for Scorpio EGBBs.
-Created 071108; last modified 071108
-**/
-void cmd_egbbpath(void)
-{
-	if (cmd_input.arg_count != 2)
-	{
-		print("Usage: egbbpath path\n");
-		return;
-	}
-	if (!strcmp(cmd_input.arg[1], "-"))
-		egbb_is_loaded = FALSE;
-	else
-		egbb_is_loaded = LoadEgbbLibrary(cmd_input.arg[1], EGBB_CACHE_SIZE);
-}
-#endif
 
 /**
 cmd_eval():
