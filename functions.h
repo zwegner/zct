@@ -95,7 +95,7 @@ void hash_alloc(BITBOARD hash_table_size);
 /* initeval.c */
 void initialize_eval(void);
 /* input.c */
-void read_line(void);
+BOOL read_line(void);
 char *getln(FILE *stream);
 int input_move(char *string, INPUT_MODE mode);
 BOOL input_available(void);
@@ -140,7 +140,9 @@ void seed_random(HASHKEY hashkey);
 VALUE search(SEARCH_BLOCK *search_block);
 /* searchroot.c */
 void search_root(void);
+void clear_search(void);
 void initialize_search(void);
+void print_search_info(void);
 void sum_counters(void);
 void initialize_counters(void);
 /* search2.c */
@@ -203,6 +205,8 @@ void unmake_move(void);
 void verify(void);
 BOOL move_is_valid(MOVE move);
 /* zct.c */
+void game_loop(void);
+char *zct_version_string(void);
 void prompt(void);
 void bench(void);
 void fatal_error(char *text, ...);

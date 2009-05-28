@@ -172,8 +172,8 @@ case SEARCH_START:
 		{
 			SEARCH_CALL(sb->depth - 2 * PLY, sb->ply, sb->alpha, sb->beta,
 				sb->last_move, sb->node_type, SEARCH_IID)
-			sb->iid_value = RETURN_VALUE;
-			if (sb->iid_value > sb->alpha)
+			r = RETURN_VALUE;
+			if (r > sb->alpha)
 				sb->hash_move = board.pv_stack[sb->ply][0];
 		}
 

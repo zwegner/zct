@@ -33,11 +33,10 @@ VALUE evaluate_king_safety(EVAL_BLOCK *eval_block, COLOR color)
 	int r;
 	BITBOARD king_area;
 	BITBOARD pawn_attacks;
-	BITBOARD knight_attacks;
-	BITBOARD bishop_attacks;
-	BITBOARD rook_attacks;
-	BITBOARD queen_attacks;
+	BITBOARD piece_attacks[2][5];
 	BOOL king_is_safe;
+	COLOR c;
+	PIECE piece;
 	SHELTER shelter;
 	SQUARE square;
 	SQ_FILE file;
@@ -54,56 +53,59 @@ VALUE evaluate_king_safety(EVAL_BLOCK *eval_block, COLOR color)
 
 	good_squares[COLOR_FLIP(color)] |= king_area;
 	/* piece attacks */
-	pawn_attacks = SHIFT_FORWARD(board.piece_bb[PAWN] &
-		board.color_bb[COLOR_FLIP(color)], COLOR_FLIP(color));
-	pawn_attacks = SHIFT_LF(pawn_attacks) | SHIFT_RT(pawn_attacks);
+	for (r = 0; r < 2; r++)
+	{
+		c = (r == 0) ? color : COLOR_FLIP(color);
 
-	knight_attacks = attack_set[COLOR_FLIP(color)][KNIGHT];
-	bishop_attacks = attack_set[COLOR_FLIP(color)][BISHOP];
-	rook_attacks = attack_set[COLOR_FLIP(color)][ROOK];
-	queen_attacks = attack_set[COLOR_FLIP(color)][QUEEN];
+		pawn_attacks = SHIFT_FORWARD(board.piece_bb[PAWN] &
+				board.color_bb[c], c);
+		piece_attacks[r][PAWN] = SHIFT_LF(pawn_attacks) |
+		   	SHIFT_RT(pawn_attacks);
 
-	DEBUG_EVAL(print("king area:\n%lI",king_area,pawn_attacks));
-	DEBUG_EVAL(print("%lI",knight_attacks,bishop_attacks));
-	DEBUG_EVAL(print("%lI",rook_attacks,queen_attacks));
+		for (piece = KNIGHT; piece <= QUEEN; piece++)
+			piece_attacks[r][piece] = attack_set[c][piece];
+	}
+
+	for (piece = PAWN; piece <= QUEEN; piece++)
+		DEBUG_EVAL(print("%lI",piece_attacks[0][piece],piece_attacks[1][piece]));
+	DEBUG_EVAL(print("king area:\n%I",king_area));
 	/* Take the count of how many pieces of each type attack the area
 		near the king. */
 	r = 0;
-	r += king_safety_att_weight[PAWN] * pop_count(pawn_attacks & king_area);
-	r += king_safety_att_weight[KNIGHT] * pop_count(knight_attacks & king_area);
-	r += king_safety_att_weight[BISHOP] * pop_count(bishop_attacks & king_area);
-	r += king_safety_att_weight[ROOK] * pop_count(rook_attacks & king_area);
-	r += king_safety_att_weight[QUEEN] * pop_count(queen_attacks & king_area);
+	for (piece = PAWN; piece <= QUEEN; piece++)
+		r += king_safety_att_weight[piece] *
+		   	pop_count(piece_attacks[1][piece] & king_area);
 
 	r = MIN(MAX(r, 0), 40);
 	eval_temp = attack_value = king_safety_att_value[r];
 	eval += eval_temp;
 	DEBUG_EVAL(print("king safety: piece attacks[%C]=%V\n", color, eval_temp));
 
-	eval_temp = interpolate(eval_temp, phase, MIDGAME_PHASE);
 #if 0
 	/* blocking */
 	r = 0;
-	r += king_safety_block_weight[0] * pop_count(king_area & board.piece_bb[PAWN] & board.color_bb[color]);
-	r += king_safety_block_weight[1] * pop_count(king_area & (board.piece_bb[KNIGHT] | board.piece_bb[BISHOP] |
-		board.piece_bb[ROOK] | board.piece_bb[QUEEN]) & board.color_bb[color]);
-	r = MIN(r, 20);
-	eval_temp = king_safety_block_value[r] / 2;
+	for (piece = PAWN; piece <= QUEEN; piece++)
+		r += king_safety_block_weight[piece] * pop_count(king_area &
+			   	board.piece_bb[piece] & board.color_bb[color]);
+
+	r = MIN(MAX(r, 0), 20);
+	eval_temp = king_safety_block_value[r];
 	eval += eval_temp;
 	DEBUG_EVAL(print("king safety: blocking[%C]=%V\n", color, eval_temp));
+
 	/* defending */
 	r = 0;
-	king_area = king_moves_bb[square] & board.color_bb[color];
-	pawn_attacks = SHIFT_FORWARD(board.piece_bb[PAWN] & board.color_bb[color], color);
-	pawn_attacks = SHIFT_LF(pawn_attacks) | SHIFT_RT(pawn_attacks);
-	r += king_safety_def_weight[PAWN] * pop_count(pawn_attacks & king_area);
-	r += king_safety_def_weight[BISHOP] * pop_count(bishop_attacks & board.piece_bb[BISHOP] & board.color_bb[color]);
-	r += king_safety_def_weight[ROOK] * pop_count(rook_attacks & board.piece_bb[ROOK] & board.color_bb[color]);
-	r += king_safety_def_weight[QUEEN] * pop_count((bishop_attacks | rook_attacks) & board.piece_bb[QUEEN] & board.color_bb[color]);
-	r = MIN(r, 40);
-	eval_temp = (attack_value - king_safety_att_value[40]) * king_safety_def_percentage[r] / 100;
-	eval += eval_temp / 2;
-	DEBUG_EVAL(print("king safety: defense factor[%C]=%i%%\n", color, king_safety_def_percentage[r]));
+//	king_area = king_moves_bb[square] & board.color_bb[color];
+	for (piece = PAWN; piece <= QUEEN; piece++)
+		r += king_safety_def_weight[piece] *
+			pop_count(piece_attacks[0][piece] & king_area);
+
+	r = MIN(MAX(r, 0), 40);
+	eval_temp = (attack_value - king_safety_att_value[40]) *
+	   	king_safety_def_percentage[r] / 100;
+	eval += eval_temp;
+	DEBUG_EVAL(print("king safety: defense factor[%C]=%i%%\n", color,
+			   	king_safety_def_percentage[r]));
 	DEBUG_EVAL(print("king safety: defense score[%C]=%V\n", color, eval_temp));
 	DEBUG_EVAL(print("king safety: dynamic score[%C]=%V\n", color, eval));
 #endif

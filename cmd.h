@@ -76,6 +76,7 @@ void cmd_perf(void);
 void cmd_perft(void);
 void cmd_save(void);
 void cmd_setfen(void);
+void cmd_setname(void);
 void cmd_sort(void);
 void cmd_source(void);
 void cmd_test(void);

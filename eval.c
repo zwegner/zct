@@ -28,6 +28,16 @@ BITBOARD attack_set[2][6];
 BITBOARD good_squares[2];
 PHASE phase;
 
+/* Color-independent fill functions */
+BITBOARD (*fill_forward[2])(BITBOARD g, BITBOARD p) =
+{
+	fill_up, fill_down
+};
+BITBOARD (*smear_forward[2])(BITBOARD g) =
+{
+	smear_up, smear_down
+};
+
 /**
 material_balance():
 Simply return the material advantage the side to move has.

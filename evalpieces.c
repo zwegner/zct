@@ -127,8 +127,7 @@ VALUE evaluate_rooks(COLOR color)
 			file has a pawn on it for each side. */
 		f = FILE_OF(square);
 		open_file = BIT_IS_SET(board.pawn_entry.open_files[color], f) |
-			BIT_IS_SET(board.pawn_entry.open_files
-				[COLOR_FLIP(color)], f) << 1;
+			BIT_IS_SET(board.pawn_entry.open_files[COLOR_FLIP(color)], f) << 1;
 		r += rook_open_file_value[open_file];
 
 		/* Attacks: we ignore friendly rooks and queens because they can
@@ -142,7 +141,7 @@ VALUE evaluate_rooks(COLOR color)
 		r += evaluate_mobility(attacks, ROOK, color, square);
 	}
 
-	DEBUG_EVAL(print("rooks[%C] = %V\n", color, eval_temp));
+	DEBUG_EVAL(print("rooks[%C] = %V\n", color, r));
 
 	return r;
 }
@@ -182,7 +181,7 @@ VALUE evaluate_queens(COLOR color)
 		r += evaluate_mobility(attacks, QUEEN, color, square);
 	}
 
-	DEBUG_EVAL(print("queens[%C] = %V\n", color, eval_temp));
+	DEBUG_EVAL(print("queens[%C] = %V\n", color, r));
 
 	return r;
 }

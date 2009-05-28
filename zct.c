@@ -23,7 +23,7 @@
 #include "eval.h"
 #include "smp.h"
 
-int main(void)
+int main(char **argv, int argc)
 {
 	FILE *init_file;
 
@@ -44,14 +44,33 @@ int main(void)
 	initialize_cluster();
 #endif
 
+	/* Parse command line arguments. */
+	//if (parse_command_line(argv, argc))
+	//	game_loop();
+
 	/* Read config file. */
 	init_file = fopen("ZCT.ini", "rt");
 	if (init_file != NULL)
 	{
 		zct->source = TRUE;
 		zct->input_stream = init_file;
+		game_loop();
 	}
 
+	/* Done parsing command line arguments and .ini files--read from stdin. */
+	zct->source = FALSE;
+	zct->input_stream = stdin;
+	game_loop();
+}
+
+/**
+game_loop():
+At the basic level, ZCT just sits here in a loop, reading commands from its
+input source, and performing whatever action it is supposed to.
+Created 052709; last modified 052709
+**/
+void game_loop(void)
+{
 	/* The main processing loop. Check the game state, see if we should
 		move, ponder, read input, process input, etc. */
 	while (TRUE)
@@ -127,7 +146,10 @@ int main(void)
 		/* Read input. If input is already waiting, we print the line out
 			to verify that we have read it. */
 		if (zct->input_buffer == NULL || zct->input_buffer[0] == '\0')
-			read_line();
+		{
+			if (!read_line())
+				return;
+		}
 		else if (zct->protocol != XBOARD && zct->protocol != UCI)
 			print("%s\n", zct->input_buffer);
 		
@@ -135,10 +157,27 @@ int main(void)
 			assume it is a move. The input_move() function will barf if the
 			input isn't really a move. */
 		if (command(zct->input_buffer) == CMD_BAD && zct->protocol != UCI)
+		{
 			input_move(zct->input_buffer, INPUT_USER_MOVE);
-		/* Clear the input buffer. */
-		zct->input_buffer[0] = '\0';
+			/* Clear the input buffer. */
+			zct->input_buffer[0] = '\0';
+		}
 	}
+}
+
+/**
+zct_version_string():
+Return a string that gives the engine name and version, along with any set
+name that the user might have specified (like a personality name).
+Created 052709; last modified 052709
+**/
+char *zct_version_string(void)
+{
+	static char str[256];
+	sprint(str, sizeof(str), "%s%i%s\n", ZCT_VERSION_STR, ZCT_VERSION,
+			zct->name_string);
+
+	return str;
 }
 
 /**
@@ -254,7 +293,6 @@ void bench(void)
 	};
 	struct bench_position *current_position;
 
-	zct->input_buffer[0] = '\0';
 	total_nodes = 0;
 	time = get_time();
 	old_post = zct->post;

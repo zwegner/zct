@@ -72,6 +72,12 @@ typedef struct
 
 typedef struct
 {
+	ID node_id;
+	ID cpu_id;
+} CLUSTER_SPLIT_CHILD;
+
+typedef struct
+{
 	ID id;
 	volatile BOOL active;
 	volatile BOOL no_moves_left;

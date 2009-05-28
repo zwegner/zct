@@ -45,7 +45,6 @@ int epd_load(char *file_name, POS_FUNC pos_func, void *pos_arg)
 		perror(file_name);
 		return 0;
 	}
-	zct->input_buffer[0] = '\0';
 	positions = 0;
 	pos_data.epd = &epd;
 

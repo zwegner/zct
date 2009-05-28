@@ -131,8 +131,8 @@ typedef struct CACHE_ALIGNED
 
 typedef struct SPLIT_POINT
 {
-	int n; /* the array slot in split_point[] that this is */
 	ID id;
+	ID n; /* the array slot in split_point[] that this is */
 	volatile BOOL active;
 	volatile BOOL no_moves_left;
 	BOARD board;
@@ -199,6 +199,9 @@ typedef struct CACHE_ALIGNED
 	/* The tree structure holds information about potential split points. */
 	TREE_BLOCK tree;
 
+	/* Split point data. */
+	ID split_id;
+
 	LOCK_T lock;
 	LOCK_T input_lock; /* Used for all input/output */
 } SMP_BLOCK;
@@ -209,8 +212,6 @@ typedef struct CACHE_ALIGNED
 	int splits_done;
 	int stops_done;
 	BOARD root_board;
-	ID split_id;
-	int split_count;
 	BOOL return_flag;
 	int return_value;
 	MOVE return_pv[MAX_PLY];
@@ -218,8 +219,8 @@ typedef struct CACHE_ALIGNED
 	LOCK_T io_lock; /* Used for all input/output */
 } SMP_DATA;
 
-extern SMP_BLOCK *smp_block;
 extern SPLIT_POINT *split_point;
+extern SMP_BLOCK *smp_block;
 extern SMP_DATA *smp_data;
 
 /* smp.c */

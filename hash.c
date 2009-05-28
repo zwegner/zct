@@ -26,7 +26,8 @@
 
 /**
 hash_probe():
-Probes the hash table for the current position. Returns a move and score, if they are found.
+Probes the hash table for the current position. Returns a move and score,
+if they are found.
 Created 081706; last modified 051208
 **/
 BOOL hash_probe(SEARCH_BLOCK *sb, BOOL is_qsearch)
@@ -69,7 +70,8 @@ BOOL hash_probe(SEARCH_BLOCK *sb, BOOL is_qsearch)
 #endif
 #ifdef USE_SPDH
 			/* Only allow cutoffs in the case of the paths being the same. */
-			if (HASH_DEPTH(data) >= sb->depth && HASH_PATH(hashkey ^ data) == HASH_PATH(board.path_hashkey))
+			if (HASH_DEPTH(data) >= sb->depth &&
+					HASH_PATH(hashkey ^ data) == HASH_PATH(board.path_hashkey))
 #else
 			if (HASH_DEPTH(data) >= sb->depth)
 #endif
@@ -80,6 +82,7 @@ BOOL hash_probe(SEARCH_BLOCK *sb, BOOL is_qsearch)
 					value -= sb->ply;
 				else if (value <= -MATE + MAX_PLY)
 					value += sb->ply;
+
 				/* Check for cutoffs. */
 				type = HASH_TYPE(data);
 				if (type == HASH_EXACT_BOUND)
@@ -111,11 +114,13 @@ hash_store():
 Stores the given information about the position in the hash table.
 Created 081706; last modified 060808
 **/
-void hash_store(SEARCH_BLOCK *sb, MOVE move, VALUE value, HASH_BOUND_TYPE type, BOOL is_qsearch)
+void hash_store(SEARCH_BLOCK *sb, MOVE move, VALUE value,
+		HASH_BOUND_TYPE type, BOOL is_qsearch)
 {
 	int x;
 	int best_slot;
 	int best_depth;
+	int rel_depth;
 	BITBOARD data;
 	BITBOARD hashkey;
 	HASH_ENTRY *entry;
@@ -137,6 +142,7 @@ void hash_store(SEARCH_BLOCK *sb, MOVE move, VALUE value, HASH_BOUND_TYPE type, 
 	{
 		hashkey = entry->entry[x].hashkey;
 		data = entry->entry[x].data;
+		rel_depth = HASH_DEPTH(data) - age_difference(HASH_AGE(data)) * 2 * PLY;
 #ifdef USE_SPDH
 		if (HASH_NON_PATH(hashkey ^ data) == HASH_NON_PATH(board.hashkey))
 #else
@@ -151,27 +157,31 @@ void hash_store(SEARCH_BLOCK *sb, MOVE move, VALUE value, HASH_BOUND_TYPE type, 
 				break;
 			}
 		}
-		else if (HASH_DEPTH(data) - age_difference(HASH_AGE(data)) * 2 * PLY < best_depth)
+		else if (rel_depth < best_depth)
 		{
 			best_slot = x;
-			best_depth = HASH_DEPTH(data) - age_difference(HASH_AGE(data)) * 2 * PLY;
+			best_depth = rel_depth;
 		}
 	}
 	/* Check to see if we should overwrite the entry. */
-	if (HASH_TYPE(entry->entry[best_slot].data) != HASH_EXACT_BOUND || (type == HASH_EXACT_BOUND/* &&
-		sb->depth >= HASH_DEPTH(entry->entry[best_slot].data)*/) ||
+	if (HASH_TYPE(entry->entry[best_slot].data) != HASH_EXACT_BOUND ||
+		   	(type == HASH_EXACT_BOUND
+		/* && sb->depth >= HASH_DEPTH(entry->entry[best_slot].data)*/) ||
 		age_difference(HASH_AGE(entry->entry[best_slot].data)) > 1)
 	{
 		/* Update the hash fill statistic. */
-		if (!is_qsearch && entry->entry[best_slot].data == 0 && entry->entry[best_slot].hashkey == 0)
+		if (!is_qsearch && entry->entry[best_slot].data == 0 &&
+			   	entry->entry[best_slot].hashkey == 0)
 			zct->hash_entries_full++;
 		/* Store the data in the hash table. */
 	//	if (move == NO_MOVE)
 	//		move = HASH_MOVE(entry->entry[best_slot].data);
-		data = SET_HASH_DEPTH(sb->depth) | SET_HASH_AGE(zct->search_age) | SET_HASH_TYPE(type) |
-			SET_HASH_THREAT(sb->threat) | SET_HASH_VALUE(value) | SET_HASH_MOVE(move);
+		data = SET_HASH_DEPTH(sb->depth) | SET_HASH_AGE(zct->search_age) |
+		   	SET_HASH_TYPE(type) | SET_HASH_THREAT(sb->threat) |
+		   	SET_HASH_VALUE(value) | SET_HASH_MOVE(move);
 #ifdef USE_SPDH
-		hashkey = (HASH_NON_PATH(board.hashkey) | HASH_PATH(board.path_hashkey)) ^ data;
+		hashkey = (HASH_NON_PATH(board.hashkey) |
+			   	HASH_PATH(board.path_hashkey)) ^ data;
 #else
 		hashkey = board.hashkey ^ data;
 #endif
@@ -263,7 +273,6 @@ void hash_print(void)
 	BITBOARD data;
 
 	entry = &zct->hash_table[board.hashkey % zct->hash_size];
-	zct->hash_probes++;
 	for (x = 0; x < HASH_SLOT_COUNT; x++)
 	{
 		hashkey = entry->entry[x].hashkey;
@@ -280,7 +289,8 @@ void hash_print(void)
 			threat = HASH_THREAT(entry->entry[x].data);
 			value = HASH_VALUE(entry->entry[x].data);
 			move = HASH_MOVE(entry->entry[x].data);
-			print("hash hit: move=%M depth=%i age=%i type=%i threat=%i value=%V\n",
+			print("hash hit: move=%M depth=%i age=%i type=%i threat=%i "
+					"value=%V\n",
 				move, depth, age, type, threat, value);
 			return;
 		}

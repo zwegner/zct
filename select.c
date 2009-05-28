@@ -278,6 +278,10 @@ select_move:
 				goto select_move;
 
 			break;
+
+		default:
+			/* Compiler shut-up code */
+			break;
 	}
 
 done:
@@ -327,9 +331,9 @@ MOVE select_qsearch_move(SEARCH_BLOCK *sb)
 				return move;
 
 		case SELECT_GEN_MOVES:
+			sb->select_state = SELECT_MOVE;
 			/* We're in qsearch, and we either search all moves if we're in
 				check, or just captures if we're not. */
-			sb->select_state = SELECT_MOVE;
 			if (sb->check)
 				score_moves(sb);
 			else
@@ -385,6 +389,10 @@ select_move:
 			}
 
 			return move;
+
+		default:
+			/* Compiler shut-up code */
+			break;
 	}
 
 	return NO_MOVE;

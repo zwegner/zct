@@ -328,8 +328,6 @@ void search_call(SEARCH_BLOCK *sb, BOOL is_qsearch, int depth, int ply,
 
 	sb->hash_move = NO_MOVE;
 	sb->move = NO_MOVE;
-	sb->null_value = NO_VALUE;
-	sb->iid_value = NO_VALUE;
 	sb->best_score = NO_VALUE;
 	sb->threat = FALSE;
 
@@ -521,6 +519,7 @@ BOOL stop_search(void)
 			if (zct->engine_state == PONDERING && input_move(zct->input_buffer,
 				INPUT_GET_MOVE) == zct->ponder_move)
 			{
+				zct->input_buffer[0] = '\0';
 				make_move(zct->ponder_move);
 				zct->engine_state = NORMAL;
 				update_clocks();
@@ -528,8 +527,14 @@ BOOL stop_search(void)
 			else
 				stop = TRUE;
 		}
-		else if (cmd_result == CMD_BAD && zct->protocol != UCI)
-			print("Error.\n");
+		else if (cmd_result == CMD_BAD)
+		{
+			zct->input_buffer[0] = '\0';
+			if (zct->protocol != UCI)
+				print("Error.\n");
+		}
+
+		/* Check for ping here in UCI mode. */
 		if (zct->ping && zct->protocol == UCI)
 		{
 			print("readyok\n");
@@ -540,8 +545,6 @@ BOOL stop_search(void)
 			moves to be the same. */
 		while (board.game_entry < current)
 			make_move(board.game_entry->move);
-		if (!stop)
-			zct->input_buffer[0] = '\0';
 	}
 
 	/* If we're stopping the search, set a flag to make sure we don't come

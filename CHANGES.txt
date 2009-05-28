@@ -1,3 +1,6 @@
+051209 0.3.2495
+	--Tons of SMP work. Sort of.
+	--Evaluation parameters have names now, easier to mess with.
 031809 0.3.2491
 	--Tons of SMP crap.
 	--Statistics functioning properly.

@@ -57,12 +57,16 @@ HASHKEY zobrist_path_move[4096][HASH_PATH_MOVE_COUNT];
 /* other constants */
 const char color_str[2][6] = { "white", "black" };
 const char piece_char[2][7] = { "PNBRQK", "pnbrqk" };
-const char piece_str[6][7] = { "pawn", "knight", "bishop", "rook", "queen", "king" };
+const char piece_str[6][7] =
+{
+   	"pawn", "knight", "bishop", "rook", "queen", "king"
+};
 const char result_str[][64] =
 {
-	"*", "1-0 {White mates}", "0-1 {Black mates}", "0-1 {White resigns}", "1-0 {Black resigns}",
-	"1/2-1/2 {Stalemate}", "1/2-1/2 {Fifty move rule}", "1/2-1/2 {Three repetitions}",
-	"1/2-1/2 {Draw by insufficient material", "1/2-1/2 {Draw by mutual agreement}"
+	"*", "1-0 {White mates}", "0-1 {Black mates}", "0-1 {White resigns}",
+   	"1-0 {Black resigns}", "1/2-1/2 {Stalemate}", "1/2-1/2 {Fifty move rule}",
+   	"1/2-1/2 {Three repetitions}", "1/2-1/2 {Draw by insufficient material",
+   	"1/2-1/2 {Draw by mutual agreement}"
 };
 
 /* These are process-local. */

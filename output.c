@@ -285,7 +285,7 @@ char *fen_string(BOARD *board)
 	/* EP square */
 	if (board->ep_square != OFF_BOARD)
 	{
-		sprint(s, 2, "%S", board->ep_square);
+		sprint(s, 3, "%S", board->ep_square);
 		s += 2;
 	}
 	else
@@ -614,6 +614,7 @@ void display_search_line(BOOL final, MOVE *pv, VALUE value)
 		iteration yet. */
 	if (value == -MATE && zct->current_iteration > 1)
 		value = zct->best_score_by_depth[zct->current_iteration - 1];
+
 	/* Only output if we've searched sufficient nodes. */
 	sum_counters();
 	if (zct->post && zct->nodes + zct->q_nodes > zct->output_limit)
