@@ -54,7 +54,7 @@
 
 /* During development, the version number comes externally from a file. */
 #ifndef ZCT_VERSION
-#	define ZCT_VERSION			(2497)
+#	define ZCT_VERSION			(2498)
 #endif
 
 /* Ghetto ass preprocessor string concatenation */

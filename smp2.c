@@ -613,14 +613,14 @@ void smp_wait(SEARCH_BLOCK **sb)
 	SMP_DEBUG(print("Find: %i\n", x));
 	if (x == -1)
 	{
-		help_counter = 5;//help_counter_init;
-//		help_counter_init++;
+		help_counter = help_counter_init;
+		help_counter_init++;
 		return;
 	}
 
 found_split_point:
 	help_counter = 0;
-	help_counter_init = 2;
+	help_counter_init = 3;
 	/* Here we have found a split point to attach to, so clean up a bit and
 	   then try to attach to it. */
 	temp = attach(x);
@@ -679,7 +679,6 @@ float score_split_point(SEARCH_BLOCK *sb, SPLIT_SCORE *ss)
 	if (sb->moves < 1 || moves_to_go <= 2 || sb->depth < 2 * PLY)
 		return -1;
 
-		//	STATA_INC("split scores by depth", sb->depth);
 	/* Score based on probability of a fail high. */
 	if (sb->node_type == NODE_PV)
 		fh_score = .1 + MIN((float)sb->moves / 20., 5.);
@@ -691,7 +690,6 @@ float score_split_point(SEARCH_BLOCK *sb, SPLIT_SCORE *ss)
 
 	/* Score based on depth remaining at this node. */
 	depth_score = sb->depth > 3 * PLY ? MIN(sb->depth, 10 * PLY) : .1;
-//	depth_score = sb->depth;
 
 	/* Get a score for the expected number of moves at this node. */
 	moves_score = MIN(moves_to_go, 10);
@@ -733,7 +731,7 @@ void update_best_sb(SEARCH_BLOCK *sb, BOOL recalculate)
 	int ply;
 	int sply;
 
-	if (sb->depth < 4 * PLY)
+	if (sb->depth < 2 * PLY)
 		return;
 
 	tb = &smp_block[board.id].tree;
@@ -756,18 +754,6 @@ void update_best_sb(SEARCH_BLOCK *sb, BOOL recalculate)
 				tb->best_ply = ply;
 			}
 		}
-		return;
-	}
-
-	initialize_split_score(&tb->sb_score);
-	tb->sb_score.id = 0;
-	/* Since we don't split above an existing split point, loop until we
-		have reached a split ply or get to the root. */
-	for (nsb = sb; nsb >= board.search_stack && nsb->ply > sply; nsb--)
-	{
-		score = score_split_point(nsb, &ss);
-		if (score > tb->sb_score.score)
-			tb->sb_score = ss;
 	}
 }
 
@@ -783,18 +769,14 @@ int find_split_point(void)
 	TREE_BLOCK *tb;
 	SPLIT_SCORE ss;
 	SPLIT_SCORE best_ss;
-	BOOL is_sb;
 	float score;
 	int process;
 	int best_process;
 	int x;
 
 	/* Make the best score be a minimum score for split points. */
-//	best_score = log(zct->current_iteration / 4.);
-//	best_score = MAX(best_score, .5);
 	best_process = -1;
-//	initialize_split_score(&best_ss);
-	best_ss.score = .1;//zct->current_iteration / 4;//.1;
+	best_ss.score = zct->current_iteration / 4;//.1;
 
 	/* Iterate through all search stacks that might have been copied. */
 	for (process = 0; process < zct->process_count; process++)
@@ -808,44 +790,36 @@ int find_split_point(void)
 		if (tb->best_id > 0 && tb->best_score > best_ss.score)
 		{
 			best_ss = tb->sb_score[tb->best_ply];
-		//	best_ss.score = tb->best_score;
-		//	best_ss.id = tb->best_id;
 			best_process = process;
-			is_sb = TRUE;
 		}
 	}
 	if (best_process != -1)
 	{
-		if (is_sb)
+		/* Tell the processor to split by ply and by search_block id, so
+			that the correct split point is found. */
+		x = smp_tell(best_process, SMP_SPLIT, best_ss.id);
+
+		/* Increment some stats in case this was a successful split. */
+		if (x != -1)
 		{
-			/* Tell the processor to split by ply and by search_block id, so
-				that the correct split point is found. */
-			x = smp_tell(best_process, SMP_SPLIT, best_ss.id);
-
-			/* Increment some stats in case this was a successful split. */
-			if (x != -1)
-			{
-				STATA_INC("splits by iteration", zct->current_iteration);
-				STATA_INC("splits by ply", best_ss.ply);
-				STATA_INC("splits by depth", best_ss.depth / PLY);
-				STATA_INC("splits by moves", best_ss.moves);
-				STATA_INC("splits by moves to go", best_ss.moves_to_go);
-				STATA_INC("splits by fh score * 10",
+			STATA_INC("splits by iteration", zct->current_iteration);
+			STATA_INC("splits by ply", best_ss.ply);
+			STATA_INC("splits by depth", best_ss.depth / PLY);
+			STATA_INC("splits by moves", best_ss.moves);
+			STATA_INC("splits by moves to go", best_ss.moves_to_go);
+			STATA_INC("splits by fh score * 10",
 					(int)(best_ss.fh_score * 10));
-				STATA_INC("splits by depth score",
+			STATA_INC("splits by depth score",
 					(int)(best_ss.depth_score / 4));
-				STATA_INC("splits by move score * 10",
+			STATA_INC("splits by move score * 10",
 					(int)(best_ss.moves_score * 10));
-				STATA_INC("splits by score / 10", (int)(best_ss.score / 10));
-				STATA_INC("splits by node type", best_ss.node_type);
-			}
-
-			SMP_DEBUG(print("cpu %i telling cpu %i to split on sb %i\n",
-				board.id, best_process, best_ss.id));
-			return x;
+			STATA_INC("splits by score / 10", (int)(best_ss.score / 10));
+			STATA_INC("splits by node type", best_ss.node_type);
 		}
-		else
-			return best_ss.id;
+
+		SMP_DEBUG(print("cpu %i telling cpu %i to split on sb %i\n",
+					board.id, best_process, best_ss.id));
+		return x;
 	}
 	return -2;
 }
