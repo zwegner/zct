@@ -238,22 +238,20 @@ void merge(SEARCH_BLOCK *sb)
 
 		/* Make sure no other processors try to attach here. */
 		sp->no_moves_left = TRUE;
-	
+
 		/* If our score is the best for the split point, we are officially
 			causing a STOP. This is bad. Note that another processor could
 			still back up another value greater than this beta, but luckily
 			we are only updating a statistic here! */
 		if (sb->best_score >= sp->sb->beta)
-		{
 			smp_data->stops_done++;
-
-			/* Update some statistics. */
-			STATA_INC("stops by ply", sb->ply);
-			STATA_INC("stops by depth", sb->depth / PLY);
-			STATA_INC("stops by node type", sb->node_type);
-		}
 	
 		UNLOCK(sp->lock);
+
+		/* Update some statistics. */
+		STATA_INC("stops by ply", sb->ply);
+		STATA_INC("stops by depth", sb->depth / PLY);
+		STATA_INC("stops by node type", sb->node_type);
 
 		/* Now release the split point, detach, and go away. */
 		detach(sb);
@@ -758,8 +756,7 @@ void update_best_sb(SEARCH_BLOCK *sb, BOOL recalculate)
 				tb->best_ply = ply;
 			}
 		}
-		else if (score != -1)
-			return;
+		return;
 	}
 
 	initialize_split_score(&tb->sb_score);
