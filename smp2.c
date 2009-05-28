@@ -681,11 +681,11 @@ float score_split_point(SEARCH_BLOCK *sb, SPLIT_SCORE *ss)
 
 	/* Score based on probability of a fail high. */
 	if (sb->node_type == NODE_PV)
-		fh_score = .1 + MIN((float)sb->moves / 20., 5.);
+		fh_score = .1 + MIN((float)sb->moves / 20., 1.);
 	else if (sb->node_type == NODE_ALL)
 		fh_score = 5 + MIN((float)sb->moves / 4, 5.);
 	else
-		fh_score = .1 + MIN((float)sb->moves / 10., 5.);
+		fh_score = 1 + MIN((float)sb->moves / 10., 5.);
 
 
 	/* Score based on depth remaining at this node. */

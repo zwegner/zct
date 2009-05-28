@@ -264,7 +264,7 @@ void print_search_info(void)
 		print("smp:    splits=%i stops=%i/%.1f%%\n",
 			smp_data->splits_done, smp_data->stops_done,
 			(float)100.0 * smp_data->stops_done / smp_data->splits_done);
-		print("        nodes: (");
+		print("        nodes=(");
 		for (x = 0; x < zct->process_count; x++)
 		{
 			print("%L", smp_block[x].nodes + smp_block[x].q_nodes);
