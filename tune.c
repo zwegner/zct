@@ -89,7 +89,6 @@ void tune_pgn(char *file_name)
 	/* Initialize the tuning data. We keep the old params to back up later. */
 	initialize_params(old_params);
 	copy_params(eval_parameter, old_params);
-	zct->input_buffer[0] = 0;
 	zct->engine_state = ANALYZING;
 	param = 8; /* bishop pair */
 

@@ -41,6 +41,8 @@ void search_root(void)
 	ROOT_MOVE *move;
 	int depth;
 
+	clear_search();
+
 	/* Probe the book. If we get a hit, we don't have to search. */
 	if (zct->use_book && zct->engine_state != ANALYZING &&
 		zct->engine_state != PONDERING && zct->engine_state != INFINITE &&
@@ -52,13 +54,12 @@ void search_root(void)
 	display_search_header();
 
 	/* The main iterative deepening loop. */
-	for (zct->current_iteration = 1; zct->current_iteration <= MAX_PLY &&
-		!stop_search(); zct->current_iteration++)
+	for (zct->current_iteration = 1; ; zct->current_iteration++)
 	{
 		alpha = -MATE;
 		beta = MATE;
 		zct->next_root_move = &zct->root_move_list[0];
-		while (!stop_search() && (move = select_root_move()) != NULL)
+		while ((move = select_root_move()) != NULL)
 		{
 			last_nodes = zct->nodes + zct->q_nodes;
 			make_move(move->move);
@@ -117,6 +118,9 @@ void search_root(void)
 				copy_pv(move->pv, board.pv_stack[0]);
 				display_search_line(FALSE, board.pv_stack[0], alpha);
 			}
+
+			if (stop_search() || zct->current_iteration == MAX_PLY)
+				goto done;
 		}
 		/* Add up search counters and print the PV for this iteration. */
 		sum_counters();
@@ -126,11 +130,25 @@ void search_root(void)
 			solution(s). */
 		if (zct->engine_state == TESTING &&
 			check_solutions(board.pv_stack[0][0], zct->current_iteration))
-			break;
+			goto done;
 	}
 
+done:
 	/* All done here, finish up and print out some crap. */
 	finish_search();
+}
+
+/**
+clear_search():
+Clears out search info. This is separate from initialize_search() because
+otherwise the ponder move isn't cleared (crash!).
+Created 050909; last modified 050909
+**/
+void clear_search(void)
+{
+	/* Reset ponder move. */
+	if (zct->engine_state != PONDERING)
+		zct->ponder_move = NO_MOVE;
 }
 
 /**
@@ -145,10 +163,6 @@ void initialize_search(void)
 
 	if (zct->engine_state != BENCHMARKING)
 		initialize_statistics();
-
-	/* Reset ponder move. */
-	if (zct->engine_state != PONDERING)
-		zct->ponder_move = NO_MOVE;
 
 	/* Set up root PV counter (used for move ordering). */
 	zct->root_pv_counter = 0;

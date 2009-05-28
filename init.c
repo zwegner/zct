@@ -52,8 +52,10 @@ void initialize_settings(void)
 	setvbuf(zct->input_stream, NULL, _IONBF, 0);
 	fflush(NULL);
 
-	fprintf(zct->output_stream, "%s%i\n\n", ZCT_VERSION_STR, ZCT_VERSION);
-	fprintf(zct->log_stream, "%s%i\n\n", ZCT_VERSION_STR, ZCT_VERSION);
+	/* Initialize name string and print our little header. */
+	strcpy(zct->name_string, "");
+	fprintf(zct->output_stream, "%s\n\n", zct_version_string());
+	fprintf(zct->log_stream, "%s\n\n", zct_version_string());
 
 	/* Engine state */
 	zct->protocol = DEFAULT;

@@ -54,9 +54,6 @@ void cmd_bookp(void);
 void cmd_debug(void);
 void cmd_display(void);
 void cmd_divide(void);
-#ifdef EGBB
-void cmd_egbbpath(void);
-#endif
 void cmd_eval(void);
 void cmd_evalparam(void);
 void cmd_exit(void);
@@ -79,6 +76,7 @@ void cmd_perf(void);
 void cmd_perft(void);
 void cmd_save(void);
 void cmd_setfen(void);
+void cmd_setname(void);
 void cmd_sort(void);
 void cmd_source(void);
 void cmd_test(void);

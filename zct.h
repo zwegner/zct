@@ -28,7 +28,6 @@
 
 #define SMP
 //#define CLUSTER
-//#define EGBB
 //#define ZCT_DEBUG
 //#define DEBUG_SEARCH
 
@@ -55,7 +54,7 @@
 
 /* During development, the version number comes externally from a file. */
 #ifndef ZCT_VERSION
-#	define ZCT_VERSION			(2491)
+#	define ZCT_VERSION			(2497)
 #endif
 
 /* Ghetto ass preprocessor string concatenation */
@@ -68,12 +67,12 @@
 #endif
 
 #ifdef SMP
-#	define ZCT_VERSION_STR3		ZCT_VERSION_STR2 ".MP"
+#	define ZCT_VERSION_STR3		ZCT_VERSION_STR2 "MP"
 #else
 #	define ZCT_VERSION_STR3		ZCT_VERSION_STR2
 #endif
 
-#define ZCT_VERSION_STR		ZCT_VERSION_STR3 "0.3."
+#define ZCT_VERSION_STR		ZCT_VERSION_STR3 "-0.3."
 
 /* ...that's enough of that. */
 
@@ -318,19 +317,17 @@ typedef struct
 	VALUE alpha;
 	VALUE beta;
 	VALUE best_score;
-	int depth;
-	int ply;
+	short depth;
+	short ply;
 	NODE_TYPE node_type;
 	/* Node state */
 	BITBOARD check;
 	SELECT_STATE select_state;
 	MOVE move;
-	int moves;
-	int pv_found;
-	int extension;
+	short moves;
+	short pv_found;
+	short extension;
 
-	VALUE null_value;
-	VALUE iid_value;
 	VALUE return_value;
 	BOOL threat;
 	MOVE hash_move;
@@ -490,6 +487,7 @@ typedef struct
 	BOOL source;
 
 	/* Engine state */
+  char name_string[128];
 	int process_count;
 	PROTOCOL protocol;
 	COLOR zct_side;

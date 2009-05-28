@@ -22,7 +22,7 @@
 #ifndef	STATS_H
 #define STATS_H
 
-#define USE_STATS
+//#define USE_STATS
 
 #ifdef USE_STATS
 #	define STAT_INC(s)				((*statistic(s))++)

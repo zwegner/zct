@@ -350,7 +350,7 @@ void initialize_attacks(void)
 				SHIFT_DL(fill_down_left(MASK(square), ~submask)) |
 				SHIFT_UR(fill_up_right(MASK(square), ~submask));
 		} while (submask);
-		/* ADIR_A1H8H8 attacks. */
+		/* ADIR_A1H8 attacks. */
 		mask = attack_mask[square][DIR_A8H1];
 		submask = 0;
 		do

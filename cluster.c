@@ -102,11 +102,7 @@ void cluster_idle_loop(int id)
 				search(&board.search_stack[1]);
 				break;
 			case CLUSTER_IDLE:
-				/* After we are done searching, do a blocked read on our
-					pipe. This is so that we don't consume CPU time. */
-				smp_block[id].input = 0;
-				smp_block[id].output = SMP_DONE;
-				read(smp_block[id].wait_pipe[0], buf, 1);
+				stop_child_processors();
 				break;
 			default:
 				/* Just send back the message if we're idle. */

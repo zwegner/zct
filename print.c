@@ -154,10 +154,6 @@ void sprint_(char *string, int max_length, char *text, va_list args)
 					f_int = va_arg(args, int);
 					sprintf(temp, fmt, f_int);
 					break;
-				case 'F':
-					f_board = va_arg(args, BOARD *);
-					strcpy(temp, fen_string(f_board));
-					break;
 				case 'f':
 					f_double = va_arg(args, double);
 					sprintf(temp, fmt, f_double);
@@ -181,6 +177,10 @@ void sprint_(char *string, int max_length, char *text, va_list args)
 				case 'E':
 					f_sb = va_arg(args, SEARCH_BLOCK *);
 					strcpy(temp, search_block_string(f_sb));
+					break;
+				case 'F':
+					f_board = va_arg(args, BOARD *);
+					strcpy(temp, fen_string(f_board));
 					break;
 				case 'I':
 					if (strchr(fmt, 'l'))

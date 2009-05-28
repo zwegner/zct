@@ -54,7 +54,9 @@ int command(char *input)
 	/* Shell escape. */
 	if (input[0] == '!')
 	{
+		printf("system(%s)\n",input+1);
 		system(input + 1);
+		input[0] = '\0';
 		return CMD_GOOD;
 	}
 	set_cmd_input(input);
@@ -64,7 +66,10 @@ int command(char *input)
 	cmd_parse(" \t\n");
 	/* No commands. Just return, don't print an error message. */
 	if (cmd_input.arg_count == 0)
+	{
+		input[0] = '\0';
 		return CMD_GOOD;
+	}
 	/* Try to find the command in the table for the current protocol. */
 	cmd = cmd_lookup(cmd_input.arg[0]);
 	if (cmd != NULL)
@@ -75,6 +80,10 @@ int command(char *input)
 		if ((cmd->search_flag == 1 && zct->engine_state != IDLE) ||
 			(cmd->search_flag == 2 && zct->engine_state == PONDERING))
 			return CMD_STOP_SEARCH;
+
+		/* Clear the input. XXX relies on non-const string */
+		input[0] = '\0';
+
 		/* Execute the command. */
 		cmd->cmd_func();
 		return CMD_GOOD;
@@ -160,7 +169,8 @@ void cmd_parse(char *delim)
 
 	/* Allocate argument lists. */
 	cmd_input.args = (char *)malloc(strlen(cmd_input.input) + 1);
-	/* Allocate enough space for as many arguments as there are characters. */
+	/* Allocate enough space for as many arguments as there are characters.
+		Overkill, but memory is cheap and it's maybe 1K wasted at most. */
 	cmd_input.arg = (char **)malloc(strlen(cmd_input.input) * sizeof(char *));
 	strcpy(cmd_input.args, cmd_input.input);
 	str = cmd_input.args;

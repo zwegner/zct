@@ -23,7 +23,6 @@
 #include "cmd.h"
 #include "eval.h"
 #include "pgn.h"
-#include "probe.h"
 #include "smp.h"
 
 COMMAND def_commands[] =
@@ -41,10 +40,6 @@ COMMAND def_commands[] =
 	{ 0, "divide", "display perft counts to depth - 1 for each root move",
 		1, cmd_divide },
 	{ 0, "easy", "turn pondering off", 2, cmd_easy },
-#ifdef EGBB
-	{ 0, "egbbpath", "Set the path for the directory containing Scorpio EGBBs",
-		1, cmd_egbbpath },
-#endif
 	{ 0, "eval", "display the static evaluation for the current position",
 		0, cmd_eval },
 	{ 0, "evalparam", "set an evaluation function parameter",
@@ -85,6 +80,9 @@ COMMAND def_commands[] =
 	{ 0, "setboard", "sets up a new FEN position", 1, cmd_setboard },
 	{ 0, "setfen", "sets up a FEN position from a file, given a line number",
 		1, cmd_setfen },
+	{ 0, "setname", "set a supplementary name for the engine, to be used in "
+		"printing ZCT's name. Useful for personality settings.",
+		0, cmd_setname },
 	{ 0, "sort", "displays all moves for this position in a sorted order "
 		"along with their scores", 0, cmd_sort },
 	{ 0, "source", "read the contents of a file as if they were commands, "
@@ -237,26 +235,6 @@ void cmd_divide(void)
 	print("moves=%L time=%T\n", total, get_time() - time);
 }
 
-#ifdef EGBB
-/**
-cmd_egbbpath():
-Sets the path for Scorpio EGBBs.
-Created 071108; last modified 071108
-**/
-void cmd_egbbpath(void)
-{
-	if (cmd_input.arg_count != 2)
-	{
-		print("Usage: egbbpath path\n");
-		return;
-	}
-	if (!strcmp(cmd_input.arg[1], "-"))
-		egbb_is_loaded = FALSE;
-	else
-		egbb_is_loaded = LoadEgbbLibrary(cmd_input.arg[1], EGBB_CACHE_SIZE);
-}
-#endif
-
 /**
 cmd_eval():
 Prints the static evaluation of the current position.
@@ -283,56 +261,94 @@ void cmd_eval(void)
 /**
 cmd_evalparam():
 Set an evaluation parameter.
-Created 020808; last modified 020808
+Created 020808; last modified 040809
 **/
 void cmd_evalparam(void)
 {
 	int param;
 	int element;
+	int dimension;
+	int count;
+	int dim_1;
+	int dim_2;
 	VALUE value;
 
 	if (cmd_input.arg_count < 3)
 	{
-		print("Usage: evalparam param_number value(s)...\n");
+		print("Usage: evalparam param_name value(s)...\n");
 		return;
 	}
-	param = atoi(cmd_input.arg[1]);
-	if (param < 0 || eval_parameter[param].value == NULL)
+
+	/* Find the parameter. */
+	for (param = 0; eval_parameter[param].value != NULL; param++)
+		if (strcmp(eval_parameter[param].name, cmd_input.arg[1]) == 0)
+			break;
+	if (eval_parameter[param].value == NULL)
 	{
-		print("Invalid parameter number.\n");
+		print("Invalid parameter name.\n");
 		return;
 	}
+
+	count = 0;
+
 	switch (eval_parameter[param].dimensions)
 	{
 		case 0:
+			count = 1;
+			if (count != cmd_input.arg_count - 2)
+				goto error;
+
+			/* Set the value. */
 			value = (VALUE)atoi(cmd_input.arg[2]);
 			*eval_parameter[param].value = value;
-			break;
+			return;
+
 		case 1:
-			if (eval_parameter[param].dimension[0] != cmd_input.arg_count - 2)
-			{
-				print("Invalid parameter count.\n");
-				return;
-			}
+			count = eval_parameter[param].dimension[0];
+			if (count != cmd_input.arg_count - 2)
+				goto error;
+
+			/* Set the values. */
 			for (element = 0; element < cmd_input.arg_count - 2; element++)
 			{
 				value = (VALUE)atoi(cmd_input.arg[element + 2]);
 				eval_parameter[param].value[element] = value;
 			}
-			break;
+			return;
+
 		case 2:	
-			if (eval_parameter[param].dimension[0] * eval_parameter[param].dimension[1] != cmd_input.arg_count - 2)
+			count = eval_parameter[param].dimension[0] *
+				eval_parameter[param].dimension[1];
+			/* For two-dimensional arrays, we have the , delimiter that can
+				skip unused array values in the first dimension. We only have
+				to check that the number of rows is correct. */
+			dim_1 = 0;
+			dim_2 = 0;
+			element = 0;
+			dimension = eval_parameter[param].dimension[1];
+			for (dim_1 = 0; element < cmd_input.arg_count - 2; dim_1++,
+					element++)
 			{
-				print("Invalid parameter count.\n");
-				return;
-			}
-			for (element = 0; element < cmd_input.arg_count - 2; element++)
-			{
+				if (dim_1 >= dimension)
+					goto error;
+
 				value = (VALUE)atoi(cmd_input.arg[element + 2]);
-				eval_parameter[param].value[element] = value;
+				eval_parameter[param].value[dim_2 * dimension + dim_1] = value;
+
+				if (strchr(cmd_input.arg[element + 2], ',') != NULL)
+				{
+					dim_2++;
+					/* Reset the first dimension to -1 since the loop will
+						increment it. */
+					dim_1 = -1;
+				}
 			}
-			break;
+			return;
 	}
+
+error:
+	print("Parameter \"%s\" requires %i arguments.\n",
+		eval_parameter[param].name, count);
 }
 
 /**
@@ -678,7 +694,8 @@ void cmd_save(void)
 
 /**
 cmd_setfen():
-The "setfen" command looks at a FEN/EPD file and sets the board to a certain numbered position.
+The "setfen" command looks at a FEN/EPD file and sets the board to a certain
+numbered position.
 Created 112907; last modified 011208
 **/
 void cmd_setfen(void)
@@ -722,6 +739,23 @@ void cmd_setfen(void)
 		}
 		initialize_board(fen);
 	}
+}
+
+/**
+cmd_setname():
+Sets the supplementary name string to a given string. This is useful for
+personality names in the .ini file.
+Created 052709; last modified 052709
+**/
+void cmd_setname(void)
+{
+	if (cmd_input.arg_count != 2)
+	{
+		print("Usage: setname name\n");
+		return;
+	}
+
+	strncpy(zct->name_string, cmd_input.arg[1], sizeof(zct->name_string));
 }
 
 /**
@@ -771,25 +805,40 @@ void cmd_sort(void)
 /**
 cmd_source():
 The "source" command changes ZCT's input to a file temporarily, rather than
-stdin. It's basically a "batch" file.
-Created 020808; last modified 020808
+stdin. It's basically a "batch" file for those in the demented Windows world.
+Created 020808; last modified 052709
 **/
 void cmd_source(void)
 {
+	FILE *old_input;
+	BOOL old_source;
+
 	if (cmd_input.arg_count != 2)
 	{
 		print("Usage: source source_file\n");
 		return;
 	}
 
+	old_input = zct->input_stream;
+	old_source = zct->source;
+
+	/* Open the file and see if it's valid. */
 	zct->input_stream = fopen(cmd_input.arg[1], "r");
 	if (zct->input_stream == NULL)
 	{
 		perror(cmd_input.arg[1]);
-		zct->input_stream = stdin;
+		zct->input_stream = old_input;
 		return;
 	}
+	
+	/* Set the input stream and enter the game loop. This is done recursively
+		so we go back to the file we were reading before. */
 	zct->source = TRUE;
+	game_loop();
+
+	/* Restore the previous input stream. */
+	zct->input_stream = old_input;
+	zct->source = old_source;
 }
 
 /**
@@ -856,7 +905,7 @@ void cmd_uci(void)
 	zct->notation = COORDINATE;
 	zct->zct_side = EMPTY;
 	initialize_cmds();
-	print("id name %s%i\n", ZCT_VERSION_STR, ZCT_VERSION);
+	print("id name %s\n", zct_version_string());
 	print("id author Zach Wegner\n");
 	print("uciok\n");
 }

@@ -95,7 +95,7 @@ void hash_alloc(BITBOARD hash_table_size);
 /* initeval.c */
 void initialize_eval(void);
 /* input.c */
-void read_line(void);
+BOOL read_line(void);
 char *getln(FILE *stream);
 int input_move(char *string, INPUT_MODE mode);
 BOOL input_available(void);
@@ -133,16 +133,6 @@ void ponder(void);
 void sprint(char *string, int max_length, char *text, ...);
 void print(char *text, ...);
 void sprint_(char *string, int max_length, char *text, va_list args);
-#ifdef EGBB
-typedef int (*PPROBE_EGBB) (int player, int w_king, int b_king,
-							int piece1, int square1,
-							int piece2, int square2,
-							int piece3, int square3);
-
-typedef void (*PLOAD_EGBB) (char* path,int cache_size,int load_options);
-extern int LoadEgbbLibrary(char* main_path,int egbb_cache_size);
-extern int probe_bitbases(VALUE * value);
-#endif
 /* rand.c */
 HASHKEY random_hashkey(void);
 void seed_random(HASHKEY hashkey);
@@ -150,7 +140,9 @@ void seed_random(HASHKEY hashkey);
 VALUE search(SEARCH_BLOCK *search_block);
 /* searchroot.c */
 void search_root(void);
+void clear_search(void);
 void initialize_search(void);
+void print_search_info(void);
 void sum_counters(void);
 void initialize_counters(void);
 /* search2.c */
@@ -213,6 +205,8 @@ void unmake_move(void);
 void verify(void);
 BOOL move_is_valid(MOVE move);
 /* zct.c */
+void game_loop(void);
+char *zct_version_string(void);
 void prompt(void);
 void bench(void);
 void fatal_error(char *text, ...);

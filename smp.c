@@ -24,15 +24,16 @@
 
 #ifdef SMP
 
-SMP_BLOCK *smp_block = NULL;
 SPLIT_POINT *split_point = NULL;
+SMP_BLOCK *smp_block = NULL;
 SMP_DATA *smp_data = NULL;
 TREE_BLOCK *tree_block = NULL;
-int smp_block_size;
 int split_point_size;
+int smp_block_size;
 int smp_data_size;
 
 void smp_child_sig(int x);
+
 /**
 initialize_smp():
 Initializes the smp functionality for the given number of processes.
@@ -42,10 +43,7 @@ void initialize_smp(int procs)
 {
 	int x;
 	int y;
-#ifdef ZCT_WINDOWS
-	/* Dummy for CreateThread */
 	int z;
-#endif
 
 	if (smp_data != NULL)
 		smp_cleanup();
@@ -64,11 +62,11 @@ void initialize_smp(int procs)
 	zct->process_count = procs;
 
 	/* Allocate the shared memory to the various data structures needed. */
-	smp_block_size = sizeof(SMP_BLOCK) * procs;
 	split_point_size = sizeof(SPLIT_POINT) * MAX_SPLIT_POINTS;
+	smp_block_size = sizeof(SMP_BLOCK) * procs;
 	smp_data_size = sizeof(SMP_DATA);
-	smp_block = (SMP_BLOCK *)shared_alloc(smp_block_size);
 	split_point = (SPLIT_POINT *)shared_alloc(split_point_size);
+	smp_block = (SMP_BLOCK *)shared_alloc(smp_block_size);
 	smp_data = (SMP_DATA *)shared_alloc(smp_data_size);
 	
 #define DBG(t,s,i) do{int p;\
@@ -82,13 +80,10 @@ void initialize_smp(int procs)
 
 	/*
 	DBG(SMP_BLOCK, smp_block, procs);
-	DBG(SPLIT_POINT, split_point, MAX_SPLIT_POINTS);
 	DBG(SMP_DATA, smp_data, 1);
 */
 	/* Initialize the data. */
 	/* SMP data */
-	smp_data->split_count = 0;
-	smp_data->split_id = 0;
 	smp_data->return_flag = FALSE;
 	/* smp blocks */
 	for (x = 0; x < procs; x++)
@@ -103,12 +98,18 @@ void initialize_smp(int procs)
 		initialize_split_score(&smp_block[x].tree.sb_score);
 		initialize_split_score(&smp_block[x].tree.split_score);
 
+		/* The split ID is id*MAX_CPUS+board.id, so instead of calculating
+			that every time we split, we just start at board.id and increment
+			by MAX_CPUS. */
+		smp_block[x].split_id = x;
+
 #ifdef ZCT_WINDOWS
 		_pipe(smp_block[x].wait_pipe, 8, O_BINARY);
 #else
 		pipe(smp_block[x].wait_pipe);
 #endif
 	}
+
 	/* split points */
 	for (x = 0; x < MAX_SPLIT_POINTS; x++)
 	{
@@ -121,6 +122,7 @@ void initialize_smp(int procs)
 			split_point[x].is_child[y] = FALSE;
 		}
 	}
+
 	/* main processor's smp info */
 	board.id = 0;
 	board.split_ply = board.split_ply_stack;
@@ -731,10 +733,14 @@ Created 110107; last modified 110908
 void start_child_processors(void)
 {
 	int p;
+	int x;
 
+	/* Copy the root board to all the various board structures lying around. */
 	smp_copy_root(&smp_data->root_board, &board);
-	for (p = 0; p < MAX_SPLIT_POINTS; p++)
-		smp_copy_root(&split_point[p].board, &board);
+	for (x = 0; x < MAX_SPLIT_POINTS; x++)
+		smp_copy_root(&split_point[x].board, &board);
+
+	/* Tell every child processor to start up. */
 	for (p = 1; p < zct->process_count; p++)
 	{
 		make_active(p);
@@ -800,7 +806,6 @@ void smp_cleanup(void)
 		}
 
 		shared_free(smp_block, smp_block_size);
-		shared_free(split_point, split_point_size);
 		shared_free(smp_data, smp_data_size);
 	}
 }

@@ -170,7 +170,7 @@ VALUE evaluate_pawns(void)
 //	board.pawn_entry.doubled_pawns = (BITBOARD)0;
 	board.pawn_entry.passed_pawns = (BITBOARD)0;
 
-#if 0
+#if 1
 	for (color = WHITE; color <= BLACK; color++)
 		pawns[color] = board.piece_bb[PAWN] & board.color_bb[color];
 

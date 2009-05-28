@@ -63,7 +63,7 @@ VALUE evaluate_endgame(COLOR color)
 			it can venture into the adjacent rectangles of course. */
 		eval_temp = pop_count(flood_fill_king(
 			MASK(board.king_square[COLOR_FLIP(color)]), bb_temp, 0));
-		eval += eval_temp;
+		eval += eval_temp / 2 - 16;
 	}
 	/* Evaluate king centralization. */
 	eval_temp = king_endgame_square_value[board.king_square[color]];

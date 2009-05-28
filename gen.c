@@ -313,7 +313,8 @@ MOVE *generate_evasions(MOVE *next_move, BITBOARD checkers)
 	SQUARE to;
 
 	ASSERT(pop_count(checkers) > 0 && pop_count(checkers) <= 2);
-	/* If there is only one checking piece, then we can try captures and interpositions. */
+	/* If there is only one checking piece, then we can try captures and
+		interpositions. */
 	if (pop_count(checkers) == 1)
 	{
 		/* pawns */
@@ -322,7 +323,8 @@ MOVE *generate_evasions(MOVE *next_move, BITBOARD checkers)
 
 		/* pawn caps */
 		target = checkers;
-		if (board.ep_square != OFF_BOARD && !(target & MASK_RANK_COLOR(RANK_2, board.side_tm)))
+		if (board.ep_square != OFF_BOARD &&
+			   	!(target & MASK_RANK_COLOR(RANK_2, board.side_tm)))
 			SET_BIT(target, board.ep_square);
 		moves = SHIFT_LF(forward_pawns) & target;
 		while (moves)
@@ -364,7 +366,8 @@ MOVE *generate_evasions(MOVE *next_move, BITBOARD checkers)
 			PAWN_PUSH(next_move, from, to);
 		}
 		/* pawn double step interpositions */
-		moves = SHIFT_FORWARD(pieces, board.side_tm) & target & ~board.occupied_bb;
+		moves = SHIFT_FORWARD(pieces, board.side_tm) & target &
+			~board.occupied_bb;
 		while (moves)
 		{
 			to = first_square(moves);

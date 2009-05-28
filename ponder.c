@@ -44,7 +44,8 @@ start:
 	}
 
 	make_move(zct->ponder_move);
-	/* Check the result to see if the ponder move ends the game, and don't ponder if it does. */
+	/* Check the result to see if the ponder move ends the game, and don't
+	   ponder if it does. */
 	if (check_result(FALSE))
 	{
 		unmake_move();

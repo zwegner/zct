@@ -164,8 +164,8 @@ void cmd_ics(void)
 	if (strcmp(cmd_input.arg[1], "-") != 0)
 	{
 		zct->ics_mode = TRUE;
-		print("tellall Hello! This is %s%i playing (a computer program).\n",
-			ZCT_VERSION_STR, ZCT_VERSION);
+		print("tellall Hello! This is %s playing (a computer program).\n",
+			zct_version_string());
 	}
 }
 
@@ -253,7 +253,7 @@ void cmd_protover(void)
 	print("feature sigterm=0\n");
 	print("feature reuse=1\n");
 	print("feature analyze=1\n");
-	print("feature myname=\"%s%i\"\n", ZCT_VERSION_STR, ZCT_VERSION);
+	print("feature myname=\"%s\"\n", zct_version_string());
 	print("feature colors=0\n");
 	print("feature ics=1\n");
 	print("feature name=0\n");

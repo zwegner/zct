@@ -151,9 +151,7 @@ void debug_step(SEARCH_BLOCK *search_block)
 				read_line();
 			else
 				print("%s\n", zct->input_buffer);
-			if (command(zct->input_buffer) == CMD_GOOD)
-				zct->input_buffer[0] = '\0';
-			else
+			if (command(zct->input_buffer) != CMD_GOOD)
 				debug.stop = FALSE;
 		}
 	}
@@ -217,7 +215,8 @@ Created 102206; last modified 051407
 void debug_cond_print(void)
 {
 	int cond;
-	char *cond_str[] = { "Always", "Hashkey = ", "Ply = ", "Move = ", "Score > ", "Score < " };
+	char *cond_str[] = { "Always", "Hashkey = ", "Ply = ", "Move = ",
+	   	"Score > ", "Score < " };
 
 	print("Condition mode: %s\n", cond_mode == DEBUG_COND_OR ? "OR" : "AND");
 	for (cond = 0; cond < COND_STACK_SIZE; cond++)
@@ -239,10 +238,12 @@ Created 051507; last modified 052408
 **/
 void debug_print(SEARCH_BLOCK *search_block)
 {
-	/* If there is a move made, go back to the main position of the node temporarily. */
+	/* If there is a move made, go back to the main position of the node
+		temporarily. */
 	if (search_block->move_made)
 		unmake_move();
-	print("%Bsearch_state=%R %E\n", &board, search_block->search_state, search_block);
+	print("%Bsearch_state=%R %E\n", &board, search_block->search_state,
+		   	search_block);
 	//print("search_state=%R %E\n",search_block->search_state, search_block);
 	if (search_block->move_made)
 	{

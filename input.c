@@ -33,25 +33,18 @@ read_line():
 Get an input line from stdin.
 Created 070105; last modified 050208
 **/
-void read_line(void)
+BOOL read_line(void)
 {
 	if ((zct->input_buffer = getln(zct->input_stream)) == NULL)
 	{
-		/* We read in a source file, so return to stdin and read more. */
-		if (zct->source)
-		{
-			fclose(zct->input_stream);
-			zct->input_stream = stdin;
-			zct->source = FALSE;
-			prompt();
-			read_line();
-			return;
-		}
-		else
-			exit(EXIT_SUCCESS);
+		/* We finished reading in either a source file or stdin. Failure! */
+		fclose(zct->input_stream);
+		return FALSE;
 	}
 	if (!zct->source)
 		fprintf(zct->log_stream, "%s\n", zct->input_buffer);
+
+	return TRUE;
 }
 
 /**
@@ -65,6 +58,7 @@ char *getln(FILE *stream)
 {
 	int c;
 	int size;
+	BOOL escape = FALSE;
 	static char *buffer = NULL;
 
 	if (buffer != NULL)
@@ -75,6 +69,13 @@ char *getln(FILE *stream)
 	size = 0;
 	while ((c = fgetc(stream)) != EOF)
 	{
+		/* If we have a backslash character as the the current character, we
+			don't emit it, but rather escape the next character. */
+		if (c == '\\')
+		{
+			escape = TRUE;
+			continue;
+		}
 		if (buffer == NULL)
 			buffer = malloc(1);
 		else
@@ -82,7 +83,7 @@ char *getln(FILE *stream)
 		buffer[size] = c;
 		size++;
 		/* Commands are delimited by newlines and semicolons. */
-		if (c == '\0' || c == '\n' || c == '\r' || c == ';')
+		if (c == '\0' || (!escape && (c == '\n' || c == '\r' || c == ';')))
 		{
 			/* We don't want to keep newlines and semicolons. */
 			if (c != '\0')
@@ -156,12 +157,15 @@ int input_move(char *string, INPUT_MODE mode)
 		if (strlen(string) > 7)
 			goto end;
 		strcpy(move_string, string);
-		piece = PAWN; /* Pawn is the default piece, no specifier is needed. */
+		/* Pawn is the default piece, no specifier is needed. */
+		piece = PAWN;
+
 		/* Pull off any characters that might be added on the move. */
 		if ((c = strchr(move_string, '+')) != NULL)
 			*c = '\0';
 		else if ((c = strchr(move_string, '#')) != NULL)
 			*c = '\0';
+
 		/* Detect castling moves. */
 		if (!strcmp(move_string, "o-o") ||
 			!strcmp(move_string, "O-O") ||
@@ -181,30 +185,36 @@ int input_move(char *string, INPUT_MODE mode)
 		}
 		if (strlen(move_string) < 2)
 			goto end;
+
 		/* Pull off the promotion piece, if present. */
 		if ((c = strchr(move_string, '=')) != NULL)
 			strcpy(c, c + 1);
-		if ((c = strchr(promote_s, move_string[strlen(move_string) - 1])) != NULL)
+		if ((c = strchr(promote_s, move_string[strlen(move_string) - 1])) !=
+				NULL)
 		{
 			promote = (c - promote_s) >> 1;
 			move_string[strlen(move_string) - 1] = '\0';
 		}
 		if (strlen(move_string) < 2)
 			goto end;
+
 		/* The to square must be specified fully. */
 		to_rank = move_string[strlen(move_string) - 1] - '1';
 		to_file = move_string[strlen(move_string) - 2] - 'a';
-		if (to_file < FILE_A || to_file > FILE_H || to_rank < RANK_1 || to_rank > RANK_8)
+		if (to_file < FILE_A || to_file > FILE_H ||
+				to_rank < RANK_1 || to_rank > RANK_8)
 			goto end;
 		to = SQ_FROM_RF(to_rank, to_file);
 		move_string[strlen(move_string) - 2] = '\0';
 		if (strlen(move_string) == 0)
 			goto end;
+
 		/* Pull off the capture specifier, if present. */
 		if (move_string[strlen(move_string) - 1] == 'x')
 			move_string[strlen(move_string) - 1] = '\0';
 		if (strlen(move_string) == 0)
 			goto end;
+
 		/* Pull off any information about the from square present. */
 		if ((c = strchr(rank_s, move_string[strlen(move_string) - 1])) != NULL)
 		{
@@ -250,6 +260,8 @@ end:
 		found++;
 		move = *next;
 	}
+
+	/* One matching move found: input is OK. */
 	if (found == 1)
 	{
 		if (mode == INPUT_GET_MOVE)
@@ -258,6 +270,8 @@ end:
 			make_move(move);
 		return TRUE;
 	}
+	/* We found either no moves that match or more than one. If we're in xboard
+		or console mode, output an appropriate error. */
 	else if (mode == INPUT_USER_MOVE)
 	{
 		if (zct->protocol != UCI)
@@ -279,6 +293,7 @@ Created 102206; last modified 102206
 BOOL input_available(void)
 {
 #ifdef ZCT_POSIX
+	
 	int fd;
 	fd_set f_s;
 	struct timeval tv;
@@ -292,7 +307,9 @@ BOOL input_available(void)
 	tv.tv_usec = 0;
 	select(1, &f_s, 0, 0, &tv);
 	return FD_ISSET(fd, &f_s);
+
 #elif defined(ZCT_WINDOWS)
+
 	static BOOL initialized = FALSE;
 	static BOOL is_pipe;
 	static HANDLE input_handle;
@@ -309,12 +326,13 @@ BOOL input_available(void)
 	{
 		initialized = TRUE;
 		input_handle = GetStdHandle(STD_INPUT_HANDLE);
-		/* We rely on this function failing or not to see if we're in console mode...
-			Is Windows really that badly designed??? */
+		/* We rely on this function failing or not to see if we're in console
+			mode... Is Windows really that badly designed??? */
 		is_pipe = (GetConsoleMode(input_handle, &dummy) == 0);
 		if (!is_pipe)
 		{
-			SetConsoleMode(input_handle, dummy & ~(ENABLE_MOUSE_INPUT | ENABLE_WINDOW_INPUT));
+			SetConsoleMode(input_handle, dummy &
+					~(ENABLE_MOUSE_INPUT | ENABLE_WINDOW_INPUT));
 			FlushConsoleInputBuffer(input_handle);
 		}
 	}
@@ -329,5 +347,6 @@ BOOL input_available(void)
 		GetNumberOfConsoleInputEvents(input_handle, &dummy);
 		return (dummy > 1);
 	}
+
 #endif /* ZCT_WINDOWS */
 }

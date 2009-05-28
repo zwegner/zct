@@ -51,10 +51,10 @@ VALUE piece_square_value[2][6][64] =
 		{ /* white bishop */
 			 0,-2,-4,-7,-7,-4,-2, 0,
 			-2, 2, 1,-2,-2, 1, 2,-2,
-			-4, 1, 4, 0, 0, 4, 1,-3,
+			-4, 1, 4, 0, 0, 4, 1,-4,
 			-7,-2, 0, 8, 8, 0,-2,-7,
 			-7,-2, 0, 8, 8, 0,-2,-7,
-			-4, 1, 4, 0, 0, 4, 1,-3,
+			-4, 1, 4, 0, 0, 4, 1,-4,
 			-2, 2, 1,-2,-2, 1, 2,-2,
 			 0,-2,-4,-7,-7,-4,-2, 0
 		},
@@ -153,6 +153,7 @@ VALUE king_shelter_value[31] =
 	-17, -18, -19, -19, -20, -20, -20, -21, -21, -22,
 	-23, -25, -27, -29, -32, -36, -41, -46, -53, -61, -70
 };
+VALUE king_safety_att_weight[6] = { 1, 2, 2, 4, 8, 0 };
 VALUE king_safety_att_value[41] =
 {
 	100, 96, 92, 88, 82, 76, 70, 63, 56, 48,
@@ -160,11 +161,13 @@ VALUE king_safety_att_value[41] =
 	1, 0, -2, -4, -7, -10, -14, -18, -24, -30,
 	-38, -48, -60, -70, -82, -95, -110, -130, -160, -200, -250
 };
+VALUE king_safety_block_weight[6] = { 3, 1, 2, 2, 2, 0 };
 VALUE king_safety_block_value[21] =
 {
 	40, 32, 25, 19, 14, 10, 7, 5, 3, 1, 0,
 	-1, -3, -5, -7, -10, -14, -19, -25, -32, -40
 };
+VALUE king_safety_def_weight[6] = { 4, 2, 2, 4, 7, 0 };
 VALUE king_safety_def_percentage[41] =
 { 
 	150, 144, 138, 133, 129, 124, 121, 117,
@@ -173,9 +176,6 @@ VALUE king_safety_def_percentage[41] =
 	99, 98, 97, 96, 94, 93, 91, 88,
 	86, 83, 79, 76, 71, 67, 62, 56, 50
 };
-int king_safety_att_weight[6] = { 1, 2, 2, 4, 8, 0 };
-int king_safety_block_weight[2] = { 2, 5 };
-int king_safety_def_weight[6] = { 4, 2, 2, 4, 7, 0 };
 VALUE lost_castling_value[2] = { -20, -50 };
 VALUE trapped_rook_value = -30;
 
@@ -210,32 +210,58 @@ BITBOARD trapped_rook_mask[2][8];
 
 EVAL_PARAMETER eval_parameter[] =
 {
-	{ (VALUE *)piece_value, 				1, { 7, 0 } },
-	{ (VALUE *)piece_square_value[WHITE],	2, { 6, 64 } },
-	{ (VALUE *)development_value,			1, { 5, 0 } },
-	{ (VALUE *)&early_queen_value,			0, { 0, 0 } },
-	{ (VALUE *)passed_pawn_value,			1, { 8, 0 } },
-	{ (VALUE *)&connected_pp_value,			0, { 0, 0 } },
-	{ (VALUE *)&weak_pawn_value,			0, { 0, 0 } },
-	{ (VALUE *)&doubled_pawn_value,			0, { 0, 0 } },
-	{ (VALUE *)&bishop_pair_value,			0, { 0, 0 } },
-	{ (VALUE *)rook_on_seventh_value,		1, { 2, 0 } },
-	{ (VALUE *)rook_open_file_value,		1, { 4, 0 } },
-	{ (VALUE *)mobility_value,				2, { 6, 32 } },
-	{ (VALUE *)safe_mobility_value,			2, { 6, 32 } },
-	{ (VALUE *)king_shelter_value,			2, { 2, 41 } },
-	{ (VALUE *)king_safety_att_value,		1, { 41, 0 } },
-	{ (VALUE *)king_safety_block_value,		1, { 21, 0 } },
-	{ (VALUE *)king_safety_def_percentage,	1, { 41, 0 } },
-	{ (VALUE *)king_safety_att_weight,		1, { 6, 0 } },
-	{ (VALUE *)king_safety_block_weight,	1, { 2, 0 } },
-	{ (VALUE *)king_safety_def_weight,		1, { 6, 0 } },
-	{ (VALUE *)lost_castling_value,			1, { 2, 0 } },
-	{ (VALUE *)&trapped_rook_value,			0, { 0, 0 } },
-	{ (VALUE *)king_bishop_square_value,	1, { 64, 0 } },
-	{ (VALUE *)king_endgame_square_value,	1, { 64, 0 } },
-	{ (VALUE *)&side_tm_value,				0, { 0, 0 } },
-	{ NULL,									0, { 0, 0 } }
+	{ "Piece Value",
+		(VALUE *)piece_value, 					1, { 7, 0 } },
+	{ "Piece Square Value",
+		(VALUE *)piece_square_value[WHITE],		2, { 6, 64 } },
+	{ "Development Value",
+		(VALUE *)development_value,				1, { 5, 0 } },
+	{ "Early Queen Value",
+		(VALUE *)&early_queen_value,			0, { 0, 0 } },
+	{ "Passed Pawn Value",
+		(VALUE *)passed_pawn_value,				1, { 8, 0 } },
+	{ "Connected Passed Pawn Value",
+		(VALUE *)&connected_pp_value,			0, { 0, 0 } },
+	{ "Weak Pawn Value",
+	   	(VALUE *)&weak_pawn_value,				0, { 0, 0 } },
+	{ "Doubled Pawn Value",
+		(VALUE *)&doubled_pawn_value,			0, { 0, 0 } },
+	{ "Bishop Pair Value",
+		(VALUE *)&bishop_pair_value,			0, { 0, 0 } },
+	{ "Rook On Seventh Value",
+		(VALUE *)rook_on_seventh_value,			1, { 2, 0 } },
+	{ "Rook On Open File Value",
+		(VALUE *)rook_open_file_value,			1, { 4, 0 } },
+	{ "Mobility Value",
+		(VALUE *)mobility_value,				2, { 6, 32 } },
+	{ "Safe Mobility Value",
+		(VALUE *)safe_mobility_value,			2, { 6, 32 } },
+	{ "King Shelter Value",
+		(VALUE *)king_shelter_value,			1, { 31, 0 } },
+	{ "King Safety Attack Weight",
+		(VALUE *)king_safety_att_weight,		1, { 6, 0 } },
+	{ "King Safety Attack Value",
+		(VALUE *)king_safety_att_value,			1, { 41, 0 } },
+	{ "King Safety Block Weight",
+		(VALUE *)king_safety_block_weight,		1, { 6, 0 } },
+	{ "King Safety Block Value",
+		(VALUE *)king_safety_block_value,		1, { 21, 0 } },
+	{ "King Safety Defense Weight",
+		(VALUE *)king_safety_def_weight,		1, { 6, 0 } },
+	{ "King Safety Defense Percent",
+		(VALUE *)king_safety_def_percentage,	1, { 41, 0 } },
+	{ "Lost Castling Value",
+		(VALUE *)lost_castling_value,			1, { 2, 0 } },
+	{ "Trapped Rook Value",
+		(VALUE *)&trapped_rook_value,			0, { 0, 0 } },
+	{ "King Bishop Endgame Square Value",
+		(VALUE *)king_bishop_square_value,		1, { 64, 0 } },
+	{ "King Endgame Square Value",
+		(VALUE *)king_endgame_square_value,		1, { 64, 0 } },
+	{ "Side To Move Value",
+		(VALUE *)&side_tm_value,				0, { 0, 0 } },
+	{ NULL,
+		NULL,									0, { 0, 0 } }
 };
 
 /**
@@ -251,31 +277,42 @@ void initialize_eval(void)
 	SQ_FILE file;
 	SQ_RANK rank;
 
+	/* Mirror all the PSTs. */
 	for (piece = PAWN; piece < EMPTY; piece++)
 	{
 		for (square = A1; square < OFF_BOARD; square++)
-			piece_square_value[BLACK][piece][square] = piece_square_value[WHITE][piece][SQ_FLIP(square)];
+			piece_square_value[BLACK][piece][square] =
+			   	piece_square_value[WHITE][piece][SQ_FLIP(square)];
 	}
+
+	/* Development masks. */
 	development_mask[WHITE] = MASK(B1) | MASK(C1) | MASK(F1) | MASK(G1);
 	development_mask[BLACK] = MASK(B8) | MASK(C8) | MASK(F8) | MASK(G8);
+
+	/* Trapped rook masks. */
 	for (color = WHITE; color <= BLACK; color++)
 	{
 		rank = (color == WHITE ? RANK_1 : RANK_8);
 		for (file = FILE_A; file <= FILE_C; file++)
-			trapped_rook_mask[color][file] = fill_left(MASK(SQ_FROM_RF(rank, file)), ~(BITBOARD)0) |
+			trapped_rook_mask[color][file] =
+				fill_left(MASK(SQ_FROM_RF(rank, file)), ~(BITBOARD)0) |
 				MASK(SQ_FLIP_COLOR(A2, color));
+
 		for (; file <= FILE_E; file++)
 			trapped_rook_mask[color][file] = (BITBOARD)0;
+
 		for (; file <= FILE_H; file++)
-			trapped_rook_mask[color][file] = fill_right(MASK(SQ_FROM_RF(rank, file)), ~(BITBOARD)0) |
+			trapped_rook_mask[color][file] =
+				fill_right(MASK(SQ_FROM_RF(rank, file)), ~(BITBOARD)0) |
 				MASK(SQ_FLIP_COLOR(H2, color));
 	}
 }
 
 /**
 initialize_params():
-Given a set of eval parameters different than the defaults, allocate memory so as to not corrupt the real
-evaluation data. Each parameter set must be free'd by free_params in order to not cause a memory leak.
+Given a set of eval parameters different than the defaults, allocate memory
+so as to not corrupt the real evaluation data. Each parameter set must be
+free'd by free_params in order to not cause a memory leak.
 Created 101907; last modified 101907
 **/
 void initialize_params(EVAL_PARAMETER *param)
@@ -300,7 +337,8 @@ void initialize_params(EVAL_PARAMETER *param)
 
 /**
 free_params():
-Given a set of eval parameters different than the defaults, deallocate all memory.
+Given a set of eval parameters different than the defaults, deallocate
+all memory.
 Created 101907; last modified 101907
 **/
 void free_params(EVAL_PARAMETER *param)
@@ -341,30 +379,35 @@ void copy_params(EVAL_PARAMETER *from, EVAL_PARAMETER *to)
 
 /**
 print_params():
-Given a set of eval parameters, print out each value. This is useful after they have been modified by the program,
-perhaps by autotuning.
-Created 101907; last modified 101907
+Given a set of eval parameters, print out each value. This is useful after
+they have been modified by the program, perhaps by autotuning.
+Created 101907; last modified 051709
 **/
 void print_params(EVAL_PARAMETER *param)
 {
-	int p;
 	int x;
+	int y;
 
-	for (p = 0; param[p].value != NULL; p++)
+	for (; param->name != NULL; param++)
 	{
-		print("evalparam %i ", p);
-		if (param[p].dimensions == 0)
-			print("%i\n", *param[p].value);
-		else if (eval_parameter[p].dimensions == 1)
+		print("evalparam \"%s\"", param->name);
+		if (param->dimensions == 0)
+			print(" %i\n", *param->value);
+		else if (param->dimensions == 1)
 		{
-			for (x = 0; x < eval_parameter[p].dimension[0]; x++)
-				print(" %i", param[p].value[x]);
+			for (x = 0; x < param->dimension[0]; x++)
+				print(" %i", param->value[x]);
 			print("\n");
 		}
 		else
 		{
-			for (x = 0; x < eval_parameter[p].dimension[0] * eval_parameter[p].dimension[1]; x++)
-				print(" %i", param[p].value[x]);
+			for (x = 0; x < param->dimension[0]; x++)
+			{
+				for (y = 0; y < param->dimension[1]; y++)
+					print(" %i", param->value[x * param->dimension[1] + y]);
+				if (x < param->dimension[0] - 1)
+					print(", \\\n");
+			}
 			print("\n");
 		}
 	}

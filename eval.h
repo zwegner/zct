@@ -32,6 +32,7 @@
 
 typedef struct
 {
+	char *name;
 	VALUE *value; /* pointer to real eval parameters */
 	int dimensions; /* 0, 1, or 2 */
 	int dimension[2];
@@ -59,12 +60,12 @@ extern VALUE mobility_value[6][32];
 extern VALUE safe_mobility_value[6][32];
 /* king safety terms */
 extern VALUE king_shelter_value[31];
+extern VALUE king_safety_att_weight[6];
 extern VALUE king_safety_att_value[41];
+extern VALUE king_safety_block_weight[6];
 extern VALUE king_safety_block_value[21];
+extern VALUE king_safety_def_weight[6];
 extern VALUE king_safety_def_percentage[41];
-extern int king_safety_att_weight[6];
-extern int king_safety_block_weight[2];
-extern int king_safety_def_weight[6];
 extern VALUE lost_castling_value[2];
 extern VALUE trapped_rook_value;
 /* endgame terms */
@@ -86,14 +87,8 @@ extern BITBOARD good_squares[2];
 extern PHASE phase;
 
 /* Color-independent fill functions */
-static BITBOARD (*fill_forward[2])(BITBOARD g, BITBOARD p) =
-{
-	fill_up, fill_down
-};
-static BITBOARD (*smear_forward[2])(BITBOARD g) =
-{
-	smear_up, smear_down
-};
+extern BITBOARD (*fill_forward[2])(BITBOARD g, BITBOARD p);
+extern BITBOARD (*smear_forward[2])(BITBOARD g);
 
 /* The least and the greatest files that relevant pawns are on for king-pawn
 	shelters. */

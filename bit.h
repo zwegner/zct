@@ -33,7 +33,7 @@ Returns the first square that is set in a bitboard. This 32-bit friendly routine
 was devised by Matt Taylor, and relies on de Bruijn multiplication.
 Created 070105; last modified 071308
 **/
-static SQUARE first_square(BITBOARD bitboard)
+static inline SQUARE first_square(BITBOARD bitboard)
 {
 #if defined(ZCT_POSIX) && defined(ZCT_64) && defined(ZCT_INLINE)
 
@@ -74,7 +74,7 @@ Returns the last square that is set in a bitboard. Thanks to Gerd Isenberg for
 this nifty algorithm.
 Created 113005; last modified 122205
 **/
-static SQUARE last_square(BITBOARD bitboard)
+static inline SQUARE last_square(BITBOARD bitboard)
 {
 #if defined(ZCT_POSIX) && defined(ZCT_64) && defined(ZCT_INLINE)
 
@@ -122,7 +122,7 @@ pop_count():
 Returns the number of bits set in a bitboard. This code is from somewhere.
 Created 083106; last modified 110506
 **/
-static int pop_count(BITBOARD bitboard)
+static inline int pop_count(BITBOARD bitboard)
 {
 #if defined(ZCT_POSIX) && defined(ZCT_64) && defined(ZCT_INLINE)
 

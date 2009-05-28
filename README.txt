@@ -45,7 +45,7 @@ README.txt--This file...
 COPYING.txt--The licensing information for using this software
 CHANGES.txt--The version-by-version history of ZCT, dating back further than
 you would like to know.
-src/--The directory containing all source code, including a Makefile
+Source files--A bunch of .c and .h files, as well as a Makefile
 zct.png--The standard logo for ZCT, 100x50 pixels.
 book.zbk--A standard opening book in ZCT's native format
 ZCT.ini--A standard configuration file
@@ -57,6 +57,7 @@ ACKNOWLEDGEMENTS
 This software has been enriched due to the contribution of many individuals.
 Among them are:
 
+Kenny Dail--hardware, beta testing, bug fixing, book work, evaluation advice
 Fonzy Bluemers--Beta testing, bug fixing, tweaking, eval advice, testing,
 godliness
 Teemu Pudas--Bug fixes, help in releasing, more bugfixes
@@ -64,7 +65,8 @@ Swaminathan Natarajan--Tournament running, lots of eval advice
 Wael Deeb--Opening Book
 Jim Ablett--Binaries, bug fixing
 Dann Corbit--Bug fixes
-Tony Thomas, Harun Taner, Olivier Deville, Patrick Buchmann--Tournament running
+Tony Thomas, Harun Taner, Olivier Deville, Patrick Buchmann, probably
+others--Tournament running
 Claude Shannon, Alan Turing, Donald E. Knuth, Ronald W. Moore, Frans Morsch,
 David Slate, and more--Standard chess and tree-search theory
 Tom Kerrigan--TSCP helped me learn about how to write a chess program
@@ -83,7 +85,6 @@ Additionally, the following people have supplied working code that is used in
 ZCT, usually in a modified form:
 
 Teemu Pudas--Windows SMP compatibility
-Daniel Shawul/Teemu Pudas--Scorpio bitbase support
 Vincent Diepeveen/Agner Fog--random number generator
 Gerd Isenberg--last_square()
 Matt Taylor--first_square()

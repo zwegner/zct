@@ -33,14 +33,15 @@ Created 081706; last modified 090108
 **/
 int split(SEARCH_BLOCK *sb, ID id)
 {
-	int sp;
-	int ply;
+	SMP_BLOCK *block;
+	SPLIT_POINT *sp;
 	SEARCH_BLOCK *new_sb;
 	GAME_ENTRY *current;
+	int ply;
 
 	/* Back up the move stack until we are at the position of the new
-		split point. We don't unmake the moves as we're only copying the move
-		list, not the board position. */
+	   split point. We don't unmake the moves as we're only copying the move
+	   list, not the board position. */
 	current = board.game_entry;
 	new_sb = sb;
 	while (new_sb > board.search_stack && new_sb->id != id)
@@ -55,7 +56,7 @@ int split(SEARCH_BLOCK *sb, ID id)
 		return -1;
 
 	/* If there is a move made at this node, "back up" one more ply in the
-		history so we get the board position from the start of the node. */
+	   history so we get the board position from the start of the node. */
 	if (new_sb->move_made)
 		current--;
 
@@ -65,74 +66,69 @@ int split(SEARCH_BLOCK *sb, ID id)
 	ASSERT(ply > 0 && ply < MAX_PLY);
 
 	/* We don't split above existing split points, as it's far too complicated.
-		Check old versions of ZCT to see the code that attempted to do this. */
+	   Check old versions of ZCT to see the code that attempted to do this. */
 	if (*board.split_ply > ply)
 		return -1;
 	/* See if we already have split at the specified ply. */
 	else if (*board.split_ply == ply)
-		return *board.split_point - split_point;
-
-	/* Lock the global lock to protect the split point lists. */
-	LOCK(smp_data->lock);
+		return (*board.split_point)->n;
 
 	/* Check for overflow of split_point[] or board.split_point_stack[]. */
-	if (smp_data->split_count == MAX_SPLIT_POINTS ||
-		board.split_point - board.split_point_stack == MAX_PLY)
-	{
-		UNLOCK(smp_data->lock);
-		return -1;
-	}
+	block = &smp_block[board.id];
 
 	/* Find a split point. */
-	for (sp = 0; sp < MAX_SPLIT_POINTS; sp++)
-		if (!split_point[sp].active)
+	for (sp = &split_point[board.id * MAX_CPUS];
+			sp < &split_point[(board.id + 1) * MAX_CPUS]; sp++)
+	{
+		if (sp->active == FALSE)
 			break;
-	ASSERT(sp != MAX_SPLIT_POINTS);
+	}
+	if (sp >= &split_point[(board.id + 1) * MAX_CPUS])
+		return -1;
 
 	/* We found a split point. Start to split. */
-	LOCK(split_point[sp].lock);
+	LOCK(sp->lock);
 
 	/* Each split point gets a unique id to handle asynchronous messages.
 		We need to be able to handle messages from a processor at a split
 		point that the current processor has already left. */
-	split_point[sp].id = smp_data->split_id++;
+	sp->id = block->split_id;
+	block->split_id += MAX_CPUS;
+
 	SMP_DEBUG(print("cpu %i splitting, sp=%i id=%i %E\n",
-		board.id, sp, split_point[sp].id, new_sb));
+		board.id, sp->n, sp->id, new_sb));
 	
 	/* Set the data in BOARD to tell where this split point is. */
 	*++board.split_ply = new_sb->ply;
-	*++board.split_point = &split_point[sp];
+	*++board.split_point = sp;
 	
 	/* Copy the board position to shared memory. */
-	smp_copy_to(&split_point[sp], current, new_sb);
+	smp_copy_to(sp, current, new_sb);
 
 	/* Set up some search information for the split point. */
-	split_point[sp].sb = split_point[sp].board.search_stack +
-		(new_sb - board.search_stack);
-	split_point[sp].sb->search_state = SEARCH_JOIN;
-	split_point[sp].sb->move_made = FALSE;
-	split_point[sp].pv[0] = NO_MOVE;
+	sp->sb = sp->board.search_stack + (new_sb - board.search_stack);
+	sp->sb->search_state = SEARCH_JOIN;
+	sp->sb->move_made = FALSE;
+	sp->pv[0] = NO_MOVE;
 
 	/* Some SMP bookkeeping information... */
-	split_point[sp].is_child[board.id] = TRUE;
-	split_point[sp].child_count = 1;
-	split_point[sp].no_moves_left = FALSE;
+	sp->is_child[board.id] = TRUE;
+	sp->child_count = 1;
+	sp->no_moves_left = FALSE;
 
 	/* We only change this after the split point is ready, as other processors
 		will try to split here. */
-	split_point[sp].active = TRUE;
+	sp->active = TRUE;
 
-	UNLOCK(split_point[sp].lock);
+	UNLOCK(sp->lock);
 
-	/* Update global statistics and release the lock. */
-	smp_data->split_count++;
+	/* Update global statistics. This is not atomic, so it could be bogus... */
 	smp_data->splits_done++;
-	UNLOCK(smp_data->lock);
 
 	/* Now go back to the position we were searching. */
 	while (current < board.game_entry)
 		current++;
-	return sp;
+	return sp->n;
 }
 
 /**
@@ -250,11 +246,7 @@ void merge(SEARCH_BLOCK *sb)
 			still back up another value greater than this beta, but luckily
 			we are only updating a statistic here! */
 		if (sb->best_score >= sp->sb->beta)
-		{
-			LOCK(smp_data->lock);
 			smp_data->stops_done++;
-			UNLOCK(smp_data->lock);
-		}
 	
 		UNLOCK(sp->lock);
 
@@ -325,23 +317,35 @@ SEARCH_BLOCK *update(SEARCH_BLOCK *sb, int id)
 		if (new_sb->alpha >= new_sb->beta)
 		{
 			new_sb->return_value = side == 0 ? new_bound : -new_bound;
+			/* Right now, there is a node, possibly the split point that got
+				updated, which has alpha>=beta. This is because alpha was
+				raised at a split point, and the node in question either
+				raised its alpha to meet the split point, or lowered its beta.
+				We need to back up to the node right above this one, as if it
+				returned beta in a fail high. We backup from our current node
+				to the node that got cutoff. */
 			while (sb >= new_sb)
 			{
 				/* We must check for a complicated situation where there are
-					one or more split points below a PV node that has been
+					one or more split points below the node that has been
 					updated. The change in alpha can cause the other split
-					points to have beta cutoffs. We don't send any messages in
-					this situation, as all relevant processors will receive an
-					UPDATE message from the PV node. We only detach ourselves
-					from the split point, and in case we are the last child,
-					unsplit it. */
+					points to have beta cutoffs, so we can't just return, we
+					have to clean up the split point. We don't send any
+				   	messages in this situation, as all relevant processors
+				   	will receive an UPDATE message from the PV node. We only
+				   	detach ourselves from the split point, and in case we are
+				   	the last child, unsplit it. */
 				if (sb->ply == *board.split_ply)
 				{
 					SMP_DEBUG(print("cpu %i updating below split point\n",
 						board.id));
 					detach(sb);
-					/* Check if we didn't unsplit, then we can skip the tree
-						updating and just stop. */
+					/* Check if we didn't unsplit, but instead we got kicked
+						into the idle loop. This means there are other
+						processors still attached to the split point that
+						need to detach, and then one of them will back up
+						the score. So we're all good here, find something
+						else to do. */
 					if (sb->search_state == SEARCH_WAIT)
 						return sb;
 				}
@@ -545,14 +549,10 @@ void unsplit(SEARCH_BLOCK *sb, int id)
 		new_sb->next_move = new_sb->last_move;
 		new_sb->select_state = SELECT_MOVE;
 
-		UNLOCK((*sp)->lock);
-
-		/* Update "global" information. */
-		LOCK(smp_data->lock);
+		/* Update split stack information. */
 		(*sp)->active = FALSE;
-		smp_data->split_count--;
-		ASSERT(smp_data->split_count >= 0);
-		UNLOCK(smp_data->lock);
+
+		UNLOCK((*sp)->lock);
 	}
 
 	/* Correct our local split point information. */
@@ -579,24 +579,22 @@ void smp_wait(SEARCH_BLOCK **sb)
 {
 	static int help_counter = 0;
 	static int help_counter_init = 2;
-	int x;
 	SEARCH_BLOCK *temp;
+	int x;
 
 	/* If a split point already exists, attach to that. */
-	if (smp_data->split_count > 0)
-	{
-		for (x = 0; x < MAX_SPLIT_POINTS; x++)
-			if (split_point[x].active && !split_point[x].no_moves_left &&
+	for (x = 0; x < MAX_SPLIT_POINTS; x++)
+		if (split_point[x].active && !split_point[x].no_moves_left &&
 				split_point[x].sb->last_move -
 				split_point[x].sb->first_move > 1)
-				break;
-		if (x < MAX_SPLIT_POINTS)
-		{
-			SMP_DEBUG(print("cpu %i attaching to known split point %i\n",
-				board.id, x));
-			goto found_split_point;
-		}
+			break;
+	if (x < MAX_SPLIT_POINTS)
+	{
+		SMP_DEBUG(print("cpu %i attaching to known split point %i\n",
+					board.id, x));
+		goto found_split_point;
 	}
+
 	/* help_counter is one or more, meaning we just tried to join a split
 		point but it was unsuccessful. We wait for a bit before we try to
 		split again, mostly so that active processors aren't bogged down. */
@@ -675,7 +673,7 @@ float score_split_point(SEARCH_BLOCK *sb, SPLIT_SCORE *ss)
 		sb->search_state == SEARCH_RETURN ||
 		sb->search_state == SEARCH_CHILD_RETURN)
 		return -1;
-	if (sb->moves <= 1 || moves_to_go <= 2 || sb->depth <= 1 * PLY)
+	if (sb->moves < 1 || moves_to_go <= 2 || sb->depth < 2 * PLY)
 		return -1;
 
 		//	STATA_INC("split scores by depth", sb->depth);
@@ -724,115 +722,6 @@ split, so that other processors can quickly examine our search space.
 Created 090308; last modified 031709
 **/
 void update_best_sb(SEARCH_BLOCK *sb)
-#if 0
-{
-	SEARCH_BLOCK *nsb;
-	TREE_BLOCK *tb;
-	float score;
-	int sply;
-	BOOL refresh;
-
-	tb = &smp_block[board.id].tree;
-	sply = *board.split_ply;
-	/* Incremental update */
-	float tscore;
-	ID tid;
-	int tply;
-	int tdepth;
-	int tmoves;
-	int tmovest;
-	int ttype;
-	float oscore;
-	ID oid;
-	int oply;
-	int odepth;
-	int omoves;
-	int omovest;
-	int otype;
-
-	if (sb->id == tb->sb_id || tb->sb_score == -1 ||
-		tb->ply <= sply || sb->ply < tb->ply)
-		refresh = TRUE;
-	else
-	{
-		oscore=tb->sb_score;
-		oid=tb->sb_id;
-		oply=tb->ply;
-		odepth=tb->depth;
-		omoves=tb->moves;
-		omovest=tb->movest;
-		otype=tb->type;
-
-		refresh = FALSE;
-		score = score_split_point(sb);
-		if (score > tb->sb_score)
-		{
-			tb->sb_score = score;
-			tb->sb_id = sb->id;
-			tb->ply = sb->ply;
-
-			tb->depth = sb->depth;
-			tb->moves = sb->moves;
-			tb->movest = sb->last_move - sb->next_move;
-			tb->type = sb->node_type;
-		}
-		else if (score == -1)
-			refresh = TRUE;
-		tscore=tb->sb_score;
-		tid=tb->sb_id;
-		tply=tb->ply;
-		tdepth=tb->depth;
-		tmoves=tb->moves;
-		tmovest=tb->movest;
-		ttype=tb->type;
-	}
-
-	tb->sb_score = -1;
-	tb->sb_id = 0;
-	for (nsb = sb; nsb >= board.search_stack; nsb--)
-	{
-		/* Since we don't split above an existing split point, break if we
-			have reached a split ply. */
-		if (nsb->ply <= sply)
-			break;
-		score = score_split_point(nsb);
-		if (score > tb->sb_score)
-		{
-			tb->sb_score = score;
-			tb->sb_id = nsb->id;
-			tb->ply = nsb->ply;
-			tb->depth = nsb->depth;
-			tb->moves = nsb->moves;
-			tb->movest = nsb->last_move - nsb->next_move;
-			tb->type = nsb->node_type;
-		}
-	}
-	if (!refresh && tscore != tb->sb_score)
-	{
-		print("ERROR!! d=%i p=%i sp=%i, %i\n",sb->depth,sb->ply,*board.split_ply,sb->id);
-		print("odr: %f i=%i p=%i d=%i m=%i/%i t=%i\n",
-			oscore,oid,oply,odepth,omoves,
-			omovest,otype);
-		print("old: %f i=%i p=%i d=%i m=%i/%i t=%i\n",
-			tscore,tid,tply,tdepth,tmoves,
-			tmovest,ttype);
-		print("new: %f i=%i p=%i d=%i m=%i/%i t=%i\n",
-			tb->sb_score,tb->sb_id,tb->ply,
-			tb->depth,tb->moves,tb->movest,tb->type);
-	for (nsb = sb; nsb >= board.search_stack; nsb--)
-	{
-		/* Since we don't split above an existing split point, break if we
-			have reached a split ply. */
-		if (nsb->ply <= sply)
-			break;
-		score = score_split_point(nsb);
-		print("\t%f i=%i p=%i d=%i m=%i/%i t=%i\n",
-			score,nsb->id,nsb->ply,
-			nsb->depth,nsb->moves,nsb->last_move-nsb->next_move,nsb->node_type);
-	}
-	}
-}
-#else
 {
 	SEARCH_BLOCK *nsb;
 	SPLIT_SCORE ss;
@@ -859,18 +748,15 @@ void update_best_sb(SEARCH_BLOCK *sb)
 
 	initialize_split_score(&tb->sb_score);
 	tb->sb_score.id = 0;
-	for (nsb = sb; nsb >= board.search_stack; nsb--)
+	/* Since we don't split above an existing split point, loop until we
+		have reached a split ply or get to the root. */
+	for (nsb = sb; nsb >= board.search_stack && nsb->ply > sply; nsb--)
 	{
-		/* Since we don't split above an existing split point, break if we
-			have reached a split ply. */
-		if (nsb->ply <= sply)
-			break;
 		score = score_split_point(nsb, &ss);
 		if (score > tb->sb_score.score)
 			tb->sb_score = ss;
 	}
 }
-#endif
 
 /**
 find_split_point():
@@ -888,6 +774,7 @@ int find_split_point(void)
 	float score;
 	int process;
 	int best_process;
+	int x;
 
 	/* Make the best score be a minimum score for split points. */
 //	best_score = log(zct->current_iteration / 4.);
@@ -917,24 +804,30 @@ int find_split_point(void)
 	{
 		if (is_sb)
 		{
-				int x =smp_tell(best_process, SMP_SPLIT, best_ss.id);
-				if(x!=-1){
-			STATA_INC("splits by iteration", zct->current_iteration);
-			STATA_INC("splits by ply", best_ss.ply);
-			STATA_INC("splits by depth", best_ss.depth / PLY);
-			STATA_INC("splits by moves", best_ss.moves);
-			STATA_INC("splits by moves to go", best_ss.moves_to_go);
-			STATA_INC("splits by fh score * 10", (int)(best_ss.fh_score * 10));
-			STATA_INC("splits by depth score", (int)(best_ss.depth_score / 4));
-			STATA_INC("splits by move score * 10",
-				(int)(best_ss.moves_score * 10));
-			STATA_INC("splits by score / 10", (int)(best_ss.score / 10));
-			STATA_INC("splits by node type", best_ss.node_type);
-				}
-			SMP_DEBUG(print("cpu %i telling cpu %i to split on sb %i\n",
-				board.id, best_process, id));
 			/* Tell the processor to split by ply and by search_block id, so
 				that the correct split point is found. */
+			x = smp_tell(best_process, SMP_SPLIT, best_ss.id);
+
+			/* Increment some stats in case this was a successful split. */
+			if (x != -1)
+			{
+				STATA_INC("splits by iteration", zct->current_iteration);
+				STATA_INC("splits by ply", best_ss.ply);
+				STATA_INC("splits by depth", best_ss.depth / PLY);
+				STATA_INC("splits by moves", best_ss.moves);
+				STATA_INC("splits by moves to go", best_ss.moves_to_go);
+				STATA_INC("splits by fh score * 10",
+					(int)(best_ss.fh_score * 10));
+				STATA_INC("splits by depth score",
+					(int)(best_ss.depth_score / 4));
+				STATA_INC("splits by move score * 10",
+					(int)(best_ss.moves_score * 10));
+				STATA_INC("splits by score / 10", (int)(best_ss.score / 10));
+				STATA_INC("splits by node type", best_ss.node_type);
+			}
+
+			SMP_DEBUG(print("cpu %i telling cpu %i to split on sb %i\n",
+				board.id, best_process, best_ss.id));
 			return x;
 		}
 		else
